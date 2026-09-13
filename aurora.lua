@@ -7,7 +7,7 @@
    ██║  ██║╚██████╔╝██║  ██║╚██████╔╝██║  ██║██║  ██║    ╚██████╔╝██║
    ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝     ╚═════╝ ╚═╝
 
-   Aurora UI  •  v1.0.0
+   Aurora UI  •  v1.0.1
    A modern, lightweight and fully themeable interface library for Roblox.
 
    Usage:
@@ -36,7 +36,7 @@ local LocalPlayer = Players.LocalPlayer
 
 --// Library
 local Aurora = {
-	Version      = "1.0.0",
+	Version      = "1.0.1",
 	Flags        = {},   -- Flag -> value
 	Options      = {},   -- Flag -> element object
 	Windows      = {},
@@ -501,7 +501,7 @@ function Aurora:CreateWindow(config)
 		CurrentTab   = nil,
 		Title        = config.Title or "Aurora UI",
 		SubTitle     = config.SubTitle or config.Subtitle or "v" .. Aurora.Version,
-		Size         = config.Size or UDim2.fromOffset(600, 430),
+		Size         = config.Size or UDim2.fromOffset(680, 460),
 		ToggleKey    = config.ToggleKey or config.MinimizeKey or Enum.KeyCode.RightShift,
 		MinimizeIcon = Icon(config.MinimizeIcon or "rbxassetid://10734896206"),
 	}
@@ -560,6 +560,7 @@ function Aurora:CreateWindow(config)
 		Name = "Topbar",
 		Size = UDim2.new(1, 0, 0, 46),
 		BackgroundTransparency = 0,
+		ZIndex = 4,
 		Theme = { BackgroundColor3 = "Topbar" },
 		Parent = main,
 	})
@@ -605,14 +606,19 @@ function Aurora:CreateWindow(config)
 		window.TitleIcon = titleIcon
 	end
 
+	local titleLeft = titleIcon and 48 or 16
+	-- Reserve right side for close/minimize (2 * 34 + padding)
+	local titleRightPad = 84
+
 	local titleLabel = New("TextLabel", {
 		Text = window.Title,
 		Font = Enum.Font.GothamBold,
 		TextSize = 14,
 		TextXAlignment = Enum.TextXAlignment.Left,
+		TextTruncate = Enum.TextTruncate.AtEnd,
 		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(titleIcon and 48 or 16, 0),
-		Size = UDim2.new(0, 220, 1, 0),
+		Position = UDim2.fromOffset(titleLeft, 6),
+		Size = UDim2.new(1, -(titleLeft + titleRightPad), 0, 16),
 		Theme = { TextColor3 = "Text" },
 		Parent = topbar,
 	})
@@ -621,24 +627,27 @@ function Aurora:CreateWindow(config)
 	local subLabel = New("TextLabel", {
 		Text = window.SubTitle,
 		Font = Enum.Font.Gotham,
-		TextSize = 12,
+		TextSize = 11,
 		TextXAlignment = Enum.TextXAlignment.Left,
+		TextTruncate = Enum.TextTruncate.AtEnd,
 		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(
-			(titleIcon and 48 or 16) + titleLabel.TextBounds.X + 8, 1
-		),
-		Size = UDim2.new(0, 160, 1, 0),
+		Position = UDim2.fromOffset(titleLeft, 24),
+		Size = UDim2.new(1, -(titleLeft + titleRightPad), 0, 14),
 		Theme = { TextColor3 = "SubText" },
 		Parent = topbar,
 	})
+	window.SubLabel = subLabel
 
 	--// Window control buttons
 	local function ControlButton(order, image, danger, callback)
+		-- order 0 = rightmost (close). Keep full 28px inside the frame.
 		local button = New("TextButton", {
 			Text = "",
 			AutoButtonColor = false,
+			Active = true,
+			ZIndex = 5,
 			Size = UDim2.fromOffset(28, 28),
-			Position = UDim2.new(1, -14 - (order * 32), 0, 9),
+			Position = UDim2.new(1, -36 - (order * 34), 0, 9),
 			BackgroundTransparency = 0,
 			Theme = { BackgroundColor3 = "Element" },
 			Parent = topbar,
@@ -651,6 +660,7 @@ function Aurora:CreateWindow(config)
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			Position = UDim2.fromScale(0.5, 0.5),
 			Size = UDim2.fromOffset(14, 14),
+			ZIndex = 6,
 			Theme = { ImageColor3 = "SubText" },
 			Parent = button,
 		})
@@ -662,12 +672,20 @@ function Aurora:CreateWindow(config)
 			Tween(button, 0.15, { BackgroundColor3 = Aurora.Theme.Element })
 			Tween(icon, 0.15, { ImageColor3 = Aurora.Theme.SubText })
 		end)
-		button.MouseButton1Click:Connect(callback)
+		local fired = false
+		local function fire()
+			if fired then return end
+			fired = true
+			task.defer(function() fired = false end)
+			callback()
+		end
+		button.MouseButton1Click:Connect(fire)
+		button.Activated:Connect(fire)
 		return button
 	end
 
-	ControlButton(0, "rbxassetid://10747384394", true, function() window:Close() end)
-	ControlButton(1, "rbxassetid://10734896206", false, function() window:Minimize() end)
+	ControlButton(0, "rbxassetid://6031094678", true, function() window:Close() end) -- X
+	ControlButton(1, "rbxassetid://6031097226", false, function() window:Minimize() end) -- minus-ish / fallback
 
 	--// Sidebar
 	local sidebar = New("Frame", {
@@ -691,12 +709,15 @@ function Aurora:CreateWindow(config)
 		Name = "Tabs",
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
+		Active = true,
+		ScrollingEnabled = true,
 		Size = UDim2.new(1, 0, 1, -62),
 		Position = UDim2.fromOffset(0, 8),
 		ScrollBarThickness = 2,
 		ScrollBarImageTransparency = 0.6,
 		CanvasSize = UDim2.new(),
 		AutomaticCanvasSize = Enum.AutomaticSize.Y,
+		ZIndex = 2,
 		Parent = sidebar,
 	})
 	Bind(tabList, "ScrollBarImageColor3", "Stroke")
@@ -775,8 +796,11 @@ function Aurora:CreateWindow(config)
 	local settingsButton = New("TextButton", {
 		Text = "",
 		AutoButtonColor = false,
+		Active = true,
+		ZIndex = 4,
 		Size = UDim2.fromOffset(26, 26),
-		Position = UDim2.new(1, -32, 0, 10),
+		Position = UDim2.new(1, -32, 0.5, 0),
+		AnchorPoint = Vector2.new(0, 0.5),
 		BackgroundTransparency = 0,
 		Theme = { BackgroundColor3 = "ElementHover" },
 		Parent = userPanel,
@@ -813,9 +837,8 @@ function Aurora:CreateWindow(config)
 	-- WINDOW METHODS
 	----------------------------------------------------------------
 	function window:SetTitle(text, subtitle)
-		titleLabel.Text = text or titleLabel.Text
+		if text then titleLabel.Text = text end
 		if subtitle then subLabel.Text = subtitle end
-		subLabel.Position = UDim2.fromOffset((titleIcon and 48 or 16) + titleLabel.TextBounds.X + 8, 1)
 	end
 
 	function window:SetIcon(id)
@@ -947,6 +970,9 @@ function Aurora:CreateWindow(config)
 		local button = New("TextButton", {
 			Text = "",
 			AutoButtonColor = false,
+			Active = true,
+			Selectable = true,
+			ZIndex = 3,
 			Size = UDim2.new(1, 0, 0, 34),
 			BackgroundTransparency = 1,
 			LayoutOrder = tabConfig.Order or (#window.Tabs + 1),
@@ -1051,7 +1077,11 @@ function Aurora:CreateWindow(config)
 				Tween(label, 0.15, { TextColor3 = Aurora.Theme.SubText })
 			end
 		end)
-		button.MouseButton1Click:Connect(function() tab:Select() end)
+		local function onTabPress()
+			tab:Select()
+		end
+		button.MouseButton1Click:Connect(onTabPress)
+		button.Activated:Connect(onTabPress)
 
 		function tab:SetTitle(text) label.Text = text; tab.Title = text end
 		function tab:SetIcon(id) if tabIcon then tabIcon.Image = Icon(id) end end
@@ -1840,7 +1870,11 @@ function Aurora:CreateWindow(config)
 		return settingsTab
 	end
 
-	settingsButton.MouseButton1Click:Connect(function() window:OpenSettings() end)
+	local function onSettingsPress()
+		window:OpenSettings()
+	end
+	settingsButton.MouseButton1Click:Connect(onSettingsPress)
+	settingsButton.Activated:Connect(onSettingsPress)
 
 	function window:Notify(cfg) return Aurora:Notify(cfg) end
 	function window:SelectTab(index)
