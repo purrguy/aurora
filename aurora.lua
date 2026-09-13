@@ -11,7 +11,7 @@
    A modern, lightweight and fully themeable interface library for Roblox.
 
    Usage:
-     local Aurora = loadstring(game:HttpGet("https://your.host/aurora.lua"))()
+     local Aurora = loadstring(game:HttpGet("https://raw.githubusercontent.com/mixask/aurora/refs/heads/main/aurora.lua"))()
 
    Features:
      - Customizable tabs (icon, color, order, lock)
