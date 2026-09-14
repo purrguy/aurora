@@ -1,206 +1,161 @@
 # Aurora UI
 
-A modern, lightweight, and customizable Roblox Lua UI library inspired by WindUI.
+Lightweight Roblox Luau UI library (single file). Tabs, toggles, sliders, dropdowns, keybinds, themes, notifications, minimize-to-icon.
 
-Aurora includes animated tabs, buttons, toggles, sliders, dropdowns, inputs, keybinds, notifications, themes, config flags, and a minimize-to-icon window system. It is distributed as a single Lua file with no external dependencies.
-
-## Features
-
-- Customizable tabs with icons, colors, ordering, and lock states
-- Buttons with ripple feedback and hover animations
-- Animated toggles
-- Mouse and touch-compatible sliders
-- Single-select and multi-select dropdowns
-- Text inputs and keybind controls
-- Information paragraphs, sections, and dividers
-- Title bar with a custom icon, subtitle, minimize button, and close button
-- Minimizes into one draggable custom icon
-- Bottom-left user panel with an avatar, username, tag, and settings button
-- Built-in settings tab for themes, interface scale, and minimize key
-- Five included themes: Aurora, Midnight, Rose, Emerald, and Daylight
-- Runtime theme and accent switching
-- Notifications with icons and duration indicators
-- Flag-based values with JSON config saving and loading
-- Connection cleanup when elements or the library are unloaded
-- Single-file library with no dependencies
-
-## Installation
-
-Host `aurora.lua` somewhere that provides a raw file URL, then load it with:
+## Load
 
 ```lua
 local Aurora = loadstring(game:HttpGet(
-    "https://raw.githubusercontent.com/USERNAME/REPOSITORY/main/public/aurora.lua"
+	"https://raw.githubusercontent.com/mixask/aurora/refs/heads/main/aurora.lua"
 ))()
 ```
 
-Replace `USERNAME` and `REPOSITORY` with your GitHub details.
-
-You can also copy `aurora.lua` directly into your project or executor.
-
-## Quick Start
+## Minimal example
 
 ```lua
-local Aurora = loadstring(game:HttpGet("YOUR_RAW_URL"))()
+local Aurora = loadstring(game:HttpGet(
+	"https://raw.githubusercontent.com/mixask/aurora/refs/heads/main/aurora.lua"
+))()
 
 local Window = Aurora:CreateWindow({
-    Title = "Aurora Hub",
-    SubTitle = "v1.0.0",
-    Icon = "rbxassetid://10723407389",
-    MinimizeIcon = "rbxassetid://10734896206",
-    Theme = "Aurora",
-    ToggleKey = Enum.KeyCode.RightShift,
+	Title = "My Hub",
+	SubTitle = "v1",
+	Theme = "Midnight",
+	ToggleKey = Enum.KeyCode.RightShift,
 })
 
-local Main = Window:CreateTab({
-    Title = "Main",
-    Icon = "home",
-})
+local Main = Window:CreateTab({ Title = "Main", Icon = "home" })
 
 Main:CreateToggle({
-    Title = "Example Toggle",
-    Default = false,
-    Flag = "ExampleToggle",
-    Callback = function(value)
-        print("Toggle:", value)
-    end,
+	Title = "Enabled",
+	Default = false,
+	Flag = "Enabled",
+	Callback = function(v)
+		print(v)
+	end,
 })
 
 Main:CreateSlider({
-    Title = "Walk Speed",
-    Min = 16,
-    Max = 250,
-    Default = 16,
-    Callback = function(value)
-        print("Speed:", value)
-    end,
+	Title = "Speed",
+	Min = 16,
+	Max = 100,
+	Default = 16,
+	Callback = function(v)
+		print(v)
+	end,
 })
 
-Aurora:Notify({
-    Title = "Aurora UI",
-    Content = "Loaded successfully.",
-    Duration = 5,
-})
+Aurora:Notify({ Title = "Ready", Content = "Aurora loaded", Duration = 3 })
 ```
 
-A larger example containing every component is available in [`example.lua`](./public/example.lua).
+## Elements
 
-## Components
-
-| Component | Method |
+| UI | Code |
 | --- | --- |
-| Tab | `Window:CreateTab(config)` |
-| Section | `Tab:CreateSection(text)` |
+| Tab | `Window:CreateTab({ Title, Icon, Order, Color, Locked, Hidden })` |
+| Section | `Tab:CreateSection("Title")` |
 | Divider | `Tab:CreateDivider()` |
-| Information text | `Tab:CreateParagraph(config)` |
-| Button | `Tab:CreateButton(config)` |
-| Toggle | `Tab:CreateToggle(config)` |
-| Slider | `Tab:CreateSlider(config)` |
-| Dropdown | `Tab:CreateDropdown(config)` |
-| Input | `Tab:CreateInput(config)` |
-| Keybind | `Tab:CreateKeybind(config)` |
-| Notification | `Aurora:Notify(config)` |
+| Paragraph | `Tab:CreateParagraph({ Title, Content })` |
+| Button | `Tab:CreateButton({ Title, Description, Callback })` |
+| Toggle | `Tab:CreateToggle({ Title, Default, Flag, Callback })` |
+| Slider | `Tab:CreateSlider({ Title, Min, Max, Default, Suffix, Flag, Callback })` |
+| Dropdown | `Tab:CreateDropdown({ Title, Values, Default, Multi, Flag, Callback })` |
+| Input | `Tab:CreateInput({ Title, Default, Placeholder, Flag, Callback })` |
+| Keybind | `Tab:CreateKeybind({ Title, Default, Flag, Callback, Changed })` |
+| Notify | `Aurora:Notify({ Title, Content, Icon, Duration })` |
 
-Short aliases are also available, including `Tab:Button()`, `Tab:Toggle()`, `Tab:Slider()`, and `Tab:Dropdown()`.
+Aliases: `Tab:Button`, `Tab:Toggle`, `Tab:Slider`, `Tab:Dropdown`, `Tab:Input`, `Tab:Keybind`.
 
-## Window Options
+### Hidden tabs
 
-| Option | Type | Description |
-| --- | --- | --- |
-| `Title` | string | Main window title |
-| `SubTitle` | string | Small text beside the title |
-| `Icon` | asset ID or icon name | Icon displayed beside the title |
-| `Size` | UDim2 | Window size |
-| `Theme` | string | Name of an included theme |
-| `Accent` | Color3 | Custom accent color |
-| `ToggleKey` | KeyCode | Key used to minimize or restore the window |
-| `MinimizeIcon` | asset ID or icon name | Icon used for the minimized bubble |
-| `MinimizePosition` | UDim2 | Initial minimized bubble position |
-| `Username` | string | Name shown in the user panel |
-| `UserTag` | string | Secondary name shown in the user panel |
-| `UserAvatar` | asset ID | Custom user avatar |
-| `SettingsIcon` | asset ID | Custom settings button icon |
-| `SidebarWidth` | number | Width of the tab sidebar |
-| `DestroyOnClose` | boolean | Whether closing destroys the interface |
-| `OnSettings` | function | Called when the settings button is clicked |
-| `OnMinimize` | function | Called when the minimized state changes |
-| `OnClose` | function | Called when the window closes |
+```lua
+-- Not shown in the sidebar (e.g. Settings via gear)
+Window:CreateTab({ Title = "Settings", Icon = "settings", Hidden = true })
+```
+
+Built-in **Settings** (theme, scale, minimize key) opens only from the user-panel gear and uses `Hidden = true`.
 
 ## Icons
 
-Icons can be supplied as a Roblox asset URL, a numeric asset ID, or an included icon name.
+Supported forms:
 
 ```lua
-Icon = "rbxassetid://10723407389"
-Icon = 10723407389
-Icon = "home"
+Icon = "home"                    -- built-in alias or Lucide name
+Icon = "lucide:settings"         -- Lucide pack
+Icon = "rbxassetid://123456789"  -- your asset
+Icon = 123456789                 -- numeric asset id
 ```
 
-Included names include `home`, `star`, `settings`, `user`, `sword`, `eye`, `bolt`, `globe`, `code`, `palette`, `shield`, and `rocket`.
+### Lucide (auto)
+
+Aurora loads the **Lucide** set from [Footagesus/Icons](https://github.com/Footagesus/Icons) (`lucide/dist/Icons.lua`) on first use. Names match [lucide.dev](https://lucide.dev/icons/) (e.g. `home`, `settings`, `sword`, `zap`).
+
+Browse icons: https://lucide.dev/icons  
+
+Roblox asset pack source: https://github.com/Footagesus/Icons/tree/main/lucide  
+
+Optional helpers:
+
+```lua
+Aurora.EnsureLucide()
+Aurora.ApplyIcon(imageLabel, "settings")
+```
+
+### Custom icon
+
+Upload a decal / image on Roblox, then:
+
+```lua
+Window:CreateTab({ Title = "Farm", Icon = "rbxassetid://YOUR_ID" })
+```
 
 ## Themes
 
-Change the complete interface theme at runtime:
-
 ```lua
-Aurora:SetTheme("Midnight")
+Aurora:SetTheme("Midnight") -- Aurora | Midnight | Rose | Emerald | Daylight
+Aurora:SetAccent(Color3.fromRGB(232, 195, 106))
 ```
 
-Change only the accent color:
+## Flags / config
 
 ```lua
-Aurora:SetAccent(Color3.fromRGB(64, 156, 255))
-```
-
-Custom theme tables are also supported when they contain the same color keys as an included theme.
-
-## Flags and Configs
-
-Add a `Flag` to supported elements to store their current value in `Aurora.Flags`.
-
-```lua
-local enabled = Aurora:GetFlag("ExampleToggle", false)
+local on = Aurora:GetFlag("Enabled", false)
 local json = Aurora:SaveConfig()
 Aurora:LoadConfig(json)
 ```
 
-File reading and writing are intentionally left to the environment using the library.
-
-## Window Methods
+## Window API
 
 ```lua
 Window:Minimize()
 Window:Restore()
-Window:Toggle()
+Window:Toggle()      -- ToggleKey (default RightShift)
 Window:Close()
 Window:Destroy()
-Window:SetTitle("New Title", "v1.1.0")
-Window:SetIcon("home")
-Window:SetMinimizeIcon("rocket")
-Window:SetScale(0.9)
-Window:OpenSettings()
+Window:SetTitle("Title", "Subtitle")
+Window:SetScale(1)
+Window:OpenSettings() -- hidden settings page
 Window:SelectTab(1)
-```
-
-Unload every Aurora window and disconnect tracked listeners with:
-
-```lua
 Aurora:Unload()
 ```
 
-## Compatibility
+## Window config
 
-Aurora is written for Roblox Luau environments that support `loadstring` and `game:HttpGet` when loading from a URL. GUI parenting supports `gethui`, `syn.protect_gui`, `CoreGui`, and `PlayerGui` fallbacks.
-
-Availability of HTTP requests and filesystem functions depends on the environment running the library.
-
-## Files
-
-| File | Description |
+| Option | Meaning |
 | --- | --- |
-| [`aurora.lua`](./public/aurora.lua) | Complete library source |
-| [`example.lua`](./public/example.lua) | Full usage example |
+| `Title`, `SubTitle` | Header text |
+| `Icon` | Title icon |
+| `Size` | `UDim2` (default ~680×460) |
+| `Theme`, `Accent` | Colors |
+| `ToggleKey` | Minimize / restore key |
+| `MinimizeIcon`, `MinimizePosition` | Floating bubble |
+| `Username`, `UserTag`, `UserAvatar` | User panel |
+| `SidebarWidth` | Sidebar width |
+| `DestroyOnClose` | Destroy UI on close |
+| `OnSettings`, `OnMinimize`, `OnClose` | Callbacks |
 
-## Credits
+## Notes
 
-Aurora UI is inspired by the clean layout and interaction style of WindUI. It is an independent library and is not affiliated with WindUI or Roblox.
+- Parent order: `syn.protect_gui` → `gethui()` → `CoreGui` → `PlayerGui`
+- Keybind rebind shows `...` until a key is pressed; **Escape** cancels
+- No extra dependencies beyond optional Lucide HTTP load
