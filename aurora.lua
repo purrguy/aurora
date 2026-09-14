@@ -7,7 +7,7 @@
    ██║  ██║╚██████╔╝██║  ██║╚██████╔╝██║  ██║██║  ██║    ╚██████╔╝██║
    ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝     ╚═════╝ ╚═╝
 
-   Aurora UI  •  v1.0.4
+   Aurora UI  •  v1.0.5
    A modern, lightweight and fully themeable interface library for Roblox.
 
    Usage:
@@ -36,7 +36,7 @@ local LocalPlayer = Players.LocalPlayer
 
 --// Library
 local Aurora = {
-	Version      = "1.0.4",
+	Version      = "1.0.5",
 	Flags        = {},   -- Flag -> value
 	Options      = {},   -- Flag -> element object
 	Windows      = {},
@@ -120,9 +120,80 @@ Aurora.Themes = {
 		Success       = Color3.fromRGB(36, 176, 118),
 		Danger        = Color3.fromRGB(226, 68, 84),
 	},
+	-- Black & white
+	Mono = {
+		Accent        = Color3.fromRGB(255, 255, 255),
+		AccentSoft    = Color3.fromRGB(210, 210, 210),
+		Background    = Color3.fromRGB(8, 8, 8),
+		Sidebar       = Color3.fromRGB(12, 12, 12),
+		Topbar        = Color3.fromRGB(10, 10, 10),
+		Element       = Color3.fromRGB(18, 18, 18),
+		ElementHover  = Color3.fromRGB(28, 28, 28),
+		Stroke        = Color3.fromRGB(48, 48, 48),
+		Text          = Color3.fromRGB(245, 245, 245),
+		SubText       = Color3.fromRGB(150, 150, 150),
+		Success       = Color3.fromRGB(200, 200, 200),
+		Danger        = Color3.fromRGB(255, 255, 255),
+	},
+	-- Gold (Greedy-style)
+	Gold = {
+		Accent        = Color3.fromRGB(232, 195, 106),
+		AccentSoft    = Color3.fromRGB(255, 224, 150),
+		Background    = Color3.fromRGB(10, 8, 4),
+		Sidebar       = Color3.fromRGB(14, 11, 6),
+		Topbar        = Color3.fromRGB(12, 10, 5),
+		Element       = Color3.fromRGB(22, 18, 10),
+		ElementHover  = Color3.fromRGB(32, 26, 14),
+		Stroke        = Color3.fromRGB(58, 46, 22),
+		Text          = Color3.fromRGB(255, 240, 210),
+		SubText       = Color3.fromRGB(180, 155, 110),
+		Success       = Color3.fromRGB(200, 180, 90),
+		Danger        = Color3.fromRGB(220, 90, 70),
+	},
+	-- Dark blue
+	Navy = {
+		Accent        = Color3.fromRGB(70, 130, 255),
+		AccentSoft    = Color3.fromRGB(120, 170, 255),
+		Background    = Color3.fromRGB(6, 10, 22),
+		Sidebar       = Color3.fromRGB(8, 14, 28),
+		Topbar        = Color3.fromRGB(7, 12, 26),
+		Element       = Color3.fromRGB(12, 20, 38),
+		ElementHover  = Color3.fromRGB(18, 28, 52),
+		Stroke        = Color3.fromRGB(30, 48, 80),
+		Text          = Color3.fromRGB(220, 230, 255),
+		SubText       = Color3.fromRGB(130, 150, 190),
+		Success       = Color3.fromRGB(80, 200, 180),
+		Danger        = Color3.fromRGB(255, 100, 120),
+	},
+	-- Uzi: dark base + random image overlays (see Aurora.UziImages)
+	Uzi = {
+		Accent        = Color3.fromRGB(255, 60, 100),
+		AccentSoft    = Color3.fromRGB(255, 120, 150),
+		Background    = Color3.fromRGB(8, 6, 10),
+		Sidebar       = Color3.fromRGB(12, 8, 14),
+		Topbar        = Color3.fromRGB(10, 7, 12),
+		Element       = Color3.fromRGB(20, 14, 22),
+		ElementHover  = Color3.fromRGB(30, 20, 34),
+		Stroke        = Color3.fromRGB(55, 35, 50),
+		Text          = Color3.fromRGB(250, 240, 245),
+		SubText       = Color3.fromRGB(170, 140, 155),
+		Success       = Color3.fromRGB(120, 220, 160),
+		Danger        = Color3.fromRGB(255, 80, 100),
+		UseUziImages  = true,
+	},
+}
+
+-- Image IDs used by theme "Uzi" (and SetUziImages)
+Aurora.UziImages = {
+	"rbxassetid://17241967074",
+	"rbxassetid://7951058019",
+	"rbxassetid://12704861818",
+	"rbxassetid://9457982962",
+	"rbxassetid://13735942638",
 }
 
 Aurora.Theme = table.clone(Aurora.Themes.Aurora)
+Aurora.ThemeName = "Aurora"
 
 ----------------------------------------------------------------------
 -- ICON PACK (lucide uploads) - pass any rbxassetid:// yourself to override
@@ -238,6 +309,72 @@ local function List(parent, padding, direction)
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		Parent = parent,
 	})
+end
+
+local function RandomUziImage()
+	local list = Aurora.UziImages
+	if not list or #list == 0 then return nil end
+	return list[math.random(1, #list)]
+end
+
+-- Puts a cropped image behind UI (tabs, cards, buttons). Returns the ImageLabel.
+local function DecorImage(parent, imageId, transparency, z)
+	if not parent or not imageId then return nil end
+	if typeof(imageId) == "number" then
+		imageId = "rbxassetid://" .. tostring(imageId)
+	end
+	local img = New("ImageLabel", {
+		Name = "AuroraDecor",
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		Size = UDim2.fromScale(1, 1),
+		Position = UDim2.fromScale(0, 0),
+		Image = imageId,
+		ScaleType = Enum.ScaleType.Crop,
+		ImageTransparency = transparency == nil and 0.5 or transparency,
+		ZIndex = z or 0,
+		Parent = parent,
+	})
+	return img
+end
+
+local function ShouldUseUziImages()
+	return Aurora.Theme and Aurora.Theme.UseUziImages == true
+end
+
+-- Apply optional Color / Image / ImageTransparency from element config
+local function StyleFrame(frame, style)
+	if not frame or not style then return end
+	if style.Color then
+		frame.BackgroundColor3 = style.Color
+	end
+	if style.BackgroundTransparency ~= nil then
+		frame.BackgroundTransparency = style.BackgroundTransparency
+	end
+	local image = style.Image or style.BackgroundImage
+	if image then
+		DecorImage(frame, image, style.ImageTransparency or 0.45, 0)
+	elseif style.Uzi or (ShouldUseUziImages() and style.Uzi ~= false) then
+		local id = RandomUziImage()
+		if id then
+			DecorImage(frame, id, style.ImageTransparency or 0.55, 0)
+		end
+	end
+end
+
+function Aurora:SetUziImages(list)
+	if type(list) ~= "table" then return end
+	local out = {}
+	for _, id in ipairs(list) do
+		if typeof(id) == "number" then
+			table.insert(out, "rbxassetid://" .. tostring(id))
+		elseif type(id) == "string" then
+			table.insert(out, id)
+		end
+	end
+	if #out > 0 then
+		Aurora.UziImages = out
+	end
 end
 
 -- Lucide pack (Footagesus/Icons) — optional, loaded once
@@ -429,6 +566,7 @@ function Aurora:SetTheme(name)
 	local theme = typeof(name) == "table" and name or Aurora.Themes[name]
 	if not theme then return end
 	Aurora.ThemeName = typeof(name) == "string" and name or "Custom"
+	Aurora.Theme.UseUziImages = nil
 	for token, color in pairs(theme) do
 		Aurora.Theme[token] = color
 	end
@@ -615,6 +753,13 @@ function Aurora:CreateWindow(config)
 	Corner(14, main)
 	Stroke(main, "Stroke", 1, 0.2)
 	window.Main = main
+	main.ClipsDescendants = true
+	if config.BackgroundImage then
+		DecorImage(main, config.BackgroundImage, config.BackgroundImageTransparency or 0.65, 0)
+	elseif ShouldUseUziImages() then
+		local id = RandomUziImage()
+		if id then DecorImage(main, id, 0.72, 0) end
+	end
 
 	-- UIScale must live inside a GuiObject, not the ScreenGui
 	local scaler = New("UIScale", { Scale = config.Scale or 1, Parent = main })
@@ -1075,6 +1220,15 @@ function Aurora:CreateWindow(config)
 		})
 		Corner(9, button)
 		tab.TabButton = button
+		if tabConfig.Color then
+			button.BackgroundColor3 = tabConfig.Color
+		end
+		if tabConfig.Image or tabConfig.BackgroundImage then
+			DecorImage(button, tabConfig.Image or tabConfig.BackgroundImage, tabConfig.ImageTransparency or 0.5, 0)
+		elseif ShouldUseUziImages() then
+			local id = RandomUziImage()
+			if id then DecorImage(button, id, 0.6, 0) end
+		end
 
 		local indicator = New("Frame", {
 			Size = UDim2.fromOffset(3, 0),
@@ -1219,19 +1373,31 @@ function Aurora:CreateWindow(config)
 		------------------------------------------------------------
 		-- ELEMENT BASE
 		------------------------------------------------------------
-		local function Base(height, interactive)
+		local function Base(height, interactive, style)
+			style = style or {}
 			local frame = New("Frame", {
 				Size = UDim2.new(1, 0, 0, height or 44),
-				BackgroundTransparency = 0,
+				BackgroundTransparency = style.BackgroundTransparency or 0,
 				Active = false,
-				Theme = { BackgroundColor3 = "Element" },
+				ClipsDescendants = true,
+				Theme = style.Color and nil or { BackgroundColor3 = "Element" },
+				BackgroundColor3 = style.Color or Aurora.Theme.Element,
 				Parent = page,
 			})
 			Corner(10, frame)
 			Stroke(frame, "Stroke", 1, 0.55)
+			-- custom image OR uzi random
+			if style.Image or style.BackgroundImage then
+				DecorImage(frame, style.Image or style.BackgroundImage, style.ImageTransparency or 0.4, 0)
+			elseif style.Uzi or (ShouldUseUziImages() and style.Uzi ~= false) then
+				local id = RandomUziImage()
+				if id then DecorImage(frame, id, style.ImageTransparency or 0.55, 0) end
+			end
 			if interactive then
 				frame.Active = true
-				Hoverable(frame, "Element", "ElementHover")
+				if not style.Color then
+					Hoverable(frame, "Element", "ElementHover")
+				end
 			end
 			table.insert(tab.Elements, frame)
 			task.defer(function()
@@ -1324,7 +1490,7 @@ function Aurora:CreateWindow(config)
 		------------------------------------------------------------
 		function tab:CreateParagraph(cfg)
 			cfg = cfg or {}
-			local frame = Base(56, false)
+			local frame = Base(56, false, cfg)
 			frame.AutomaticSize = Enum.AutomaticSize.Y
 
 			local accentBar = New("Frame", {
@@ -1378,7 +1544,7 @@ function Aurora:CreateWindow(config)
 		------------------------------------------------------------
 		function tab:CreateButton(cfg)
 			cfg = cfg or {}
-			local frame = Base(cfg.Description and 52 or 40, true)
+			local frame = Base(cfg.Description and 52 or 40, true, cfg)
 			local button = New("TextButton", {
 				Text = "",
 				BackgroundTransparency = 1,
@@ -1424,7 +1590,7 @@ function Aurora:CreateWindow(config)
 		function tab:CreateToggle(cfg)
 			cfg = cfg or {}
 			local state = cfg.Default or false
-			local frame = Base(cfg.Description and 52 or 42, true)
+			local frame = Base(cfg.Description and 52 or 42, true, cfg)
 
 			local button = New("TextButton", {
 				Text = "",
@@ -1488,7 +1654,7 @@ function Aurora:CreateWindow(config)
 			local value     = math.clamp(cfg.Default or min, min, max)
 			local suffix    = cfg.Suffix or ""
 
-			local frame = Base(cfg.Description and 68 or 56, false)
+			local frame = Base(cfg.Description and 68 or 56, false, cfg)
 
 			New("TextLabel", {
 				Text = cfg.Title or "Slider",
@@ -1644,7 +1810,7 @@ function Aurora:CreateWindow(config)
 			local open     = false
 			local rowHeight = cfg.Description and 52 or 42
 
-			local frame = Base(rowHeight, false)
+			local frame = Base(rowHeight, false, cfg)
 			frame.ClipsDescendants = true
 
 			local header = New("TextButton", {
@@ -1849,7 +2015,7 @@ function Aurora:CreateWindow(config)
 		------------------------------------------------------------
 		function tab:CreateInput(cfg)
 			cfg = cfg or {}
-			local frame = Base(cfg.Description and 52 or 42, false)
+			local frame = Base(cfg.Description and 52 or 42, false, cfg)
 			Labels(frame, cfg.Title or "Input", cfg.Description, 150)
 
 			local box = New("TextBox", {
@@ -1889,7 +2055,7 @@ function Aurora:CreateWindow(config)
 			local key = cfg.Default or Enum.KeyCode.E
 			local listening = false
 			local ignoreUntil = 0
-			local frame = Base(cfg.Description and 52 or 42, false)
+			local frame = Base(cfg.Description and 52 or 42, false, cfg)
 			Labels(frame, cfg.Title or "Keybind", cfg.Description, 110)
 
 			local function keyLabel(k)
