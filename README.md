@@ -159,3 +159,64 @@ Aurora:Unload()
 - Parent order: `syn.protect_gui` → `gethui()` → `CoreGui` → `PlayerGui`
 - Keybind rebind shows `...` until a key is pressed; **Escape** cancels
 - No extra dependencies beyond optional Lucide HTTP load
+
+## Themes (v1.0.5+)
+
+```lua
+Aurora:SetTheme("Mono")   -- black & white
+Aurora:SetTheme("Gold")   -- black-gold
+Aurora:SetTheme("Navy")   -- dark blue
+Aurora:SetTheme("Uzi")    -- random images on UI chrome
+-- also: Aurora, Midnight, Rose, Emerald, Daylight
+```
+
+### Uzi images
+
+Default asset ids can be replaced:
+
+```lua
+Aurora:SetUziImages({
+	17241967074,
+	7951058019,
+	12704861818,
+	9457982962,
+	13735942638,
+})
+Aurora:SetTheme("Uzi")
+```
+
+### Per-element color & image
+
+Any element config accepts:
+
+| Field | Effect |
+| --- | --- |
+| `Color` | Solid background `Color3` |
+| `Image` / `BackgroundImage` | `rbxassetid://...` behind the card |
+| `ImageTransparency` | 0–1 (default ~0.4–0.55) |
+| `Uzi` | force / disable random Uzi image on this element |
+
+```lua
+Main:CreateButton({
+	Title = "Farm",
+	Color = Color3.fromRGB(40, 20, 10),
+	Image = "rbxassetid://17241967074",
+	ImageTransparency = 0.5,
+	Callback = function() end,
+})
+
+Window:CreateTab({
+	Title = "Combat",
+	Icon = "sword",
+	Color = Color3.fromRGB(30, 10, 10),
+	Image = "rbxassetid://9457982962",
+})
+
+-- window-wide background
+Aurora:CreateWindow({
+	Title = "Hub",
+	Theme = "Gold",
+	BackgroundImage = "rbxassetid://12704861818",
+	BackgroundImageTransparency = 0.7,
+})
+```
