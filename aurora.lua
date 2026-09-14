@@ -7,7 +7,7 @@
    ██║  ██║╚██████╔╝██║  ██║╚██████╔╝██║  ██║██║  ██║    ╚██████╔╝██║
    ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝     ╚═════╝ ╚═╝
 
-   Aurora UI  •  v1.0.2
+   Aurora UI  •  v1.0.3
    A modern, lightweight and fully themeable interface library for Roblox.
 
    Usage:
@@ -36,7 +36,7 @@ local LocalPlayer = Players.LocalPlayer
 
 --// Library
 local Aurora = {
-	Version      = "1.0.2",
+	Version      = "1.0.3",
 	Flags        = {},   -- Flag -> value
 	Options      = {},   -- Flag -> element object
 	Windows      = {},
@@ -987,7 +987,7 @@ function Aurora:CreateWindow(config)
 			Parent = tabList,
 		})
 		Corner(9, button)
-		tab.Button = button
+		tab.TabButton = button
 
 		local indicator = New("Frame", {
 			Size = UDim2.fromOffset(3, 0),
@@ -1070,8 +1070,8 @@ function Aurora:CreateWindow(config)
 			for _, other in ipairs(window.Tabs) do
 				if other ~= tab then
 					other.Page.Visible = false
-					other.Button.BackgroundTransparency = 1
-					other.Button.BackgroundColor3 = Aurora.Theme.Element
+					other.TabButton.BackgroundTransparency = 1
+					other.TabButton.BackgroundColor3 = Aurora.Theme.Element
 					other.Label.TextColor3 = Aurora.Theme.SubText
 					other.Indicator.Size = UDim2.fromOffset(3, 0)
 					if other.Icon then
