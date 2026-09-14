@@ -322,11 +322,18 @@ local function RandomUziImage()
 	return list[math.random(1, #list)]
 end
 
--- Puts a cropped image behind UI (tabs, cards, buttons). Returns the ImageLabel.
+-- Image behind UI (tabs, cards, buttons). Returns the ImageLabel.
+-- Use texture/image asset IDs (not catalog page IDs). Fit + moderate transparency so art is visible.
 local function DecorImage(parent, imageId, transparency, z)
 	if not parent or not imageId then return nil end
 	if typeof(imageId) == "number" then
 		imageId = "rbxassetid://" .. tostring(imageId)
+	end
+	-- remove previous decor on same parent (theme switch / restyle)
+	for _, child in ipairs(parent:GetChildren()) do
+		if child.Name == "AuroraDecor" and child:IsA("ImageLabel") then
+			child:Destroy()
+		end
 	end
 	local img = New("ImageLabel", {
 		Name = "AuroraDecor",
@@ -336,7 +343,7 @@ local function DecorImage(parent, imageId, transparency, z)
 		Position = UDim2.fromScale(0, 0),
 		Image = imageId,
 		ScaleType = Enum.ScaleType.Crop,
-		ImageTransparency = transparency == nil and 0.5 or transparency,
+		ImageTransparency = transparency == nil and 0.35 or transparency,
 		ZIndex = z or 0,
 		Parent = parent,
 	})
@@ -362,7 +369,7 @@ local function StyleFrame(frame, style)
 	elseif style.Uzi or (ShouldUseUziImages() and style.Uzi ~= false) then
 		local id = RandomUziImage()
 		if id then
-			DecorImage(frame, id, style.ImageTransparency or 0.55, 0)
+			DecorImage(frame, id, style.ImageTransparency or 0.4, 0)
 		end
 	end
 end
@@ -571,9 +578,13 @@ function Aurora:SetTheme(name)
 	local theme = typeof(name) == "table" and name or Aurora.Themes[name]
 	if not theme then return end
 	Aurora.ThemeName = typeof(name) == "string" and name or "Custom"
-	Aurora.Theme.UseUziImages = nil
-	for token, color in pairs(theme) do
-		Aurora.Theme[token] = color
+	-- reset flags that only some themes define
+	Aurora.Theme.UseUziImages = false
+	for token, value in pairs(theme) do
+		Aurora.Theme[token] = value
+	end
+	if theme.UseUziImages == true then
+		Aurora.Theme.UseUziImages = true
 	end
 
 	-- walk backwards so destroyed instances can be pruned in the same pass
@@ -584,7 +595,7 @@ function Aurora:SetTheme(name)
 			table.remove(ThemeBindings, index)
 		else
 			local color = Aurora.Theme[binding.Token]
-			if color then
+			if color and typeof(color) == "Color3" then
 				Tween(object, 0.25, { [binding.Property] = color })
 			end
 		end
@@ -760,10 +771,10 @@ function Aurora:CreateWindow(config)
 	window.Main = main
 	main.ClipsDescendants = true
 	if config.BackgroundImage then
-		DecorImage(main, config.BackgroundImage, config.BackgroundImageTransparency or 0.65, 0)
+		DecorImage(main, config.BackgroundImage, config.BackgroundImageTransparency or 0.55, 0)
 	elseif ShouldUseUziImages() then
 		local id = RandomUziImage()
-		if id then DecorImage(main, id, 0.72, 0) end
+		if id then DecorImage(main, id, 0.45, 0) end
 	end
 
 	-- UIScale must live inside a GuiObject, not the ScreenGui
@@ -1232,7 +1243,7 @@ function Aurora:CreateWindow(config)
 			DecorImage(button, tabConfig.Image or tabConfig.BackgroundImage, tabConfig.ImageTransparency or 0.5, 0)
 		elseif ShouldUseUziImages() then
 			local id = RandomUziImage()
-			if id then DecorImage(button, id, 0.6, 0) end
+			if id then DecorImage(button, id, 0.4, 0) end
 		end
 
 		local indicator = New("Frame", {
@@ -1396,7 +1407,7 @@ function Aurora:CreateWindow(config)
 				DecorImage(frame, style.Image or style.BackgroundImage, style.ImageTransparency or 0.4, 0)
 			elseif style.Uzi or (ShouldUseUziImages() and style.Uzi ~= false) then
 				local id = RandomUziImage()
-				if id then DecorImage(frame, id, style.ImageTransparency or 0.55, 0) end
+				if id then DecorImage(frame, id, style.ImageTransparency or 0.4, 0) end
 			end
 			if interactive then
 				frame.Active = true
@@ -2188,16 +2199,33 @@ function Aurora:CreateWindow(config)
 		})
 		settingsTab:CreateSection("Interface")
 
-		local themeNames = {}
-		for name in pairs(Aurora.Themes) do table.insert(themeNames, name) end
-		table.sort(themeNames)
+		-- fixed order so all base themes appear at the bottom of settings
+		local themeNames = {
+			"Aurora", "Midnight", "Rose", "Emerald", "Daylight",
+			"Mono", "Gold", "Navy", "Uzi",
+		}
+		for name in pairs(Aurora.Themes) do
+			local known = false
+			for _, n in ipairs(themeNames) do
+				if n == name then known = true break end
+			end
+			if not known then table.insert(themeNames, name) end
+		end
 
+		settingsTab:CreateSection("Themes")
 		settingsTab:CreateDropdown({
 			Title = "Theme",
-			Description = "Change the color palette of the interface",
+			Description = "All built-in themes (Uzi uses texture image IDs)",
 			Values = themeNames,
 			Default = Aurora.ThemeName,
-			Callback = function(value) Aurora:SetTheme(value) end,
+			Callback = function(value)
+				Aurora:SetTheme(value)
+				Aurora:Notify({
+					Title = "Theme",
+					Content = "Switched to " .. tostring(value) .. (value == "Uzi" and " — reopen or new elements get images" or ""),
+					Duration = 2.5,
+				})
+			end,
 		})
 
 		settingsTab:CreateSlider({
