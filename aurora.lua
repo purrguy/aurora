@@ -7,7 +7,7 @@
    ██║  ██║╚██████╔╝██║  ██║╚██████╔╝██║  ██║██║  ██║    ╚██████╔╝██║
    ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝     ╚═════╝ ╚═╝
 
-   Aurora UI  •  v1.1.3
+   Aurora UI  •  v1.1.4
    A modern, lightweight and fully themeable interface library for Roblox.
 
    Usage:
@@ -36,7 +36,7 @@ local LocalPlayer = Players.LocalPlayer
 
 --// Library
 local Aurora = {
-	Version      = "1.1.3",
+	Version      = "1.1.4",
 	Flags        = {},   -- Flag -> value
 	Options      = {},   -- Flag -> element object
 	Windows      = {},
@@ -517,14 +517,52 @@ function Aurora:SetUziTransparency(overlayT, windowT)
 	end
 end
 
+local function UITrans(base)
+	return math.clamp((base or 0) + (Aurora.UITransparency or 0), 0, 0.95)
+end
+
+local function ApplyWindowUITransparency(window)
+	if not window then return end
+	local t = Aurora.UITransparency or 0
+	for _, part in ipairs(window.UIParts or {}) do
+		local frame = part.Frame
+		if frame and frame.Parent then
+			frame.BackgroundTransparency = math.clamp((part.Base or 0) + t, 0, 0.95)
+		end
+	end
+	-- tab buttons: selected follows UI transparency, unselected stay fully clear
+	for _, tab in ipairs(window.Tabs or {}) do
+		local btn = tab.TabButton
+		if btn and btn.Parent then
+			if window.CurrentTab == tab then
+				btn.BackgroundTransparency = math.clamp(t, 0, 0.85)
+			else
+				btn.BackgroundTransparency = 1
+			end
+		end
+	end
+end
+
+local function RegisterUIPart(window, frame, base)
+	if not window or not frame then return end
+	window.UIParts = window.UIParts or {}
+	-- update existing registration if same frame
+	for _, part in ipairs(window.UIParts) do
+		if part.Frame == frame then
+			part.Base = base or 0
+			frame.BackgroundTransparency = UITrans(part.Base)
+			return
+		end
+	end
+	table.insert(window.UIParts, { Frame = frame, Base = base or 0 })
+	frame.BackgroundTransparency = UITrans(base or 0)
+end
+
 function Aurora:SetUITransparency(t)
 	if typeof(t) ~= "number" then return end
 	Aurora.UITransparency = math.clamp(t, 0, 0.85)
 	for _, window in ipairs(Aurora.Windows) do
-		local main = window.Main
-		if main then
-			main.BackgroundTransparency = Aurora.UITransparency
-		end
+		ApplyWindowUITransparency(window)
 	end
 end
 
@@ -742,6 +780,11 @@ function Aurora:SetTheme(name)
 			end
 		end
 	end
+
+	-- keep panel / tab transparencies after palette change
+	for _, window in ipairs(Aurora.Windows) do
+		ApplyWindowUITransparency(window)
+	end
 end
 
 function Aurora:SetAccent(color)
@@ -875,6 +918,7 @@ function Aurora:CreateWindow(config)
 
 	local window = {
 		Tabs         = {},
+		UIParts      = {}, -- panels that follow Aurora.UITransparency
 		Minimized    = false,
 		Destroyed    = false,
 		CurrentTab   = nil,
@@ -912,7 +956,7 @@ function Aurora:CreateWindow(config)
 	Stroke(main, "Stroke", 1, 0.2)
 	window.Main = main
 	main.ClipsDescendants = true
-	main.BackgroundTransparency = Aurora.UITransparency or 0
+	RegisterUIPart(window, main, 0)
 
 	-- Lowest layer: full-window art (Uzi @ 50% when theme is Uzi; toggled by transparency)
 	local windowArt
@@ -921,7 +965,6 @@ function Aurora:CreateWindow(config)
 	else
 		local id = RandomUziImage()
 		windowArt = DecorImage(main, id, Aurora.UziWindowTransparency, 0, true)
-		-- mark as window so SetUziTransparency updates Base correctly
 		for _, entry in ipairs(UziDecorList) do
 			if entry.Image == windowArt then
 				entry.Kind = "window"
@@ -955,7 +998,7 @@ function Aurora:CreateWindow(config)
 		}),
 	})
 
-	--// Top bar
+	--// Top bar (follows UI transparency + Uzi)
 	local topbar = New("Frame", {
 		Name = "Topbar",
 		Size = UDim2.new(1, 0, 0, 46),
@@ -965,13 +1008,19 @@ function Aurora:CreateWindow(config)
 		Parent = main,
 	})
 	Corner(14, topbar)
-	New("Frame", {   -- square off bottom corners
+	RegisterUIPart(window, topbar, 0)
+	do
+		local id = RandomUziImage()
+		DecorImage(topbar, id, Aurora.UziOverlayTransparency, 0, true)
+	end
+	local topbarFill = New("Frame", {   -- square off bottom corners
 		Size = UDim2.new(1, 0, 0, 14),
 		Position = UDim2.new(0, 0, 1, -14),
 		BorderSizePixel = 0,
 		Theme = { BackgroundColor3 = "Topbar" },
 		Parent = topbar,
 	})
+	RegisterUIPart(window, topbarFill, 0)
 	New("Frame", {   -- divider
 		Size = UDim2.new(1, 0, 0, 1),
 		Position = UDim2.new(0, 0, 1, -1),
@@ -994,6 +1043,7 @@ function Aurora:CreateWindow(config)
 		})
 		Corner(8, holder)
 		Stroke(holder, "Stroke", 1, 0.4)
+		RegisterUIPart(window, holder, 0)
 		titleIcon = New("ImageLabel", {
 			Image = Icon(config.Icon or "rbxassetid://10723407389"),
 			BackgroundTransparency = 1,
@@ -1084,27 +1134,38 @@ function Aurora:CreateWindow(config)
 		return button
 	end
 
-	ControlButton(0, "rbxassetid://6031094678", true, function() window:Close() end) -- X
-	ControlButton(1, "rbxassetid://6031097226", false, function() window:Minimize() end) -- minus-ish / fallback
+	local closeBtn = ControlButton(0, "rbxassetid://6031094678", true, function() window:Close() end)
+	local minBtn = ControlButton(1, "rbxassetid://6031097226", false, function() window:Minimize() end)
+	if closeBtn then RegisterUIPart(window, closeBtn, 0) end
+	if minBtn then RegisterUIPart(window, minBtn, 0) end
 
-	--// Sidebar
+	--// Sidebar (tab list rectangle — full Uzi + UI transparency)
 	local sidebar = New("Frame", {
 		Name = "Sidebar",
 		Size = UDim2.new(0, config.SidebarWidth or 156, 1, -46),
 		Position = UDim2.fromOffset(0, 46),
 		BackgroundTransparency = 0,
+		ZIndex = 3,
 		Theme = { BackgroundColor3 = "Sidebar" },
 		Parent = main,
 	})
+	window.Sidebar = sidebar
+	RegisterUIPart(window, sidebar, 0)
+	do
+		local id = RandomUziImage()
+		DecorImage(sidebar, id, Aurora.UziOverlayTransparency, 0, true)
+	end
 	New("Frame", {
 		Size = UDim2.new(0, 1, 1, 0),
 		Position = UDim2.new(1, -1, 0, 0),
 		BorderSizePixel = 0,
 		BackgroundTransparency = 0.45,
+		ZIndex = 4,
 		Theme = { BackgroundColor3 = "Stroke" },
 		Parent = sidebar,
 	})
 
+	-- Tab list area (same panel chrome — slight tint so Uzi reads on the strip)
 	local tabList = New("ScrollingFrame", {
 		Name = "Tabs",
 		BackgroundTransparency = 1,
@@ -1117,12 +1178,13 @@ function Aurora:CreateWindow(config)
 		ScrollBarImageTransparency = 0.6,
 		CanvasSize = UDim2.new(),
 		AutomaticCanvasSize = Enum.AutomaticSize.Y,
-		ZIndex = 2,
+		ZIndex = 4,
 		Parent = sidebar,
 	})
 	Bind(tabList, "ScrollBarImageColor3", "Stroke")
 	Padding(tabList, 2, 8, 10, 10)
 	List(tabList, 4)
+	window.TabList = tabList
 
 	--// Bottom-left user panel  (avatar + username + settings gear)
 	local userPanel = New("Frame", {
@@ -1130,12 +1192,18 @@ function Aurora:CreateWindow(config)
 		Size = UDim2.new(1, -16, 0, 46),
 		Position = UDim2.new(0, 8, 1, -54),
 		BackgroundTransparency = 0,
+		ZIndex = 5,
 		Theme = { BackgroundColor3 = "Element" },
 		Parent = sidebar,
 	})
 	Corner(10, userPanel)
 	Stroke(userPanel, "Stroke", 1, 0.5)
 	window.UserPanel = userPanel
+	RegisterUIPart(window, userPanel, 0)
+	do
+		local id = RandomUziImage()
+		DecorImage(userPanel, id, Aurora.UziOverlayTransparency, 0, true)
+	end
 
 	local avatarHolder = New("Frame", {
 		Size = UDim2.fromOffset(28, 28),
@@ -1223,13 +1291,30 @@ function Aurora:CreateWindow(config)
 	end)
 
 	--// Content container
-	local container = New("Frame", {
-		Name = "Container",
-		BackgroundTransparency = 1,
+	-- Content area panel (right of sidebar) — theme color + Uzi + UI transparency
+	local contentPanel = New("Frame", {
+		Name = "ContentPanel",
+		BackgroundTransparency = 0,
 		Position = UDim2.fromOffset((config.SidebarWidth or 156), 46),
 		Size = UDim2.new(1, -(config.SidebarWidth or 156), 1, -46),
 		ClipsDescendants = true,
+		Theme = { BackgroundColor3 = "Background" },
 		Parent = main,
+	})
+	window.ContentPanel = contentPanel
+	RegisterUIPart(window, contentPanel, 0)
+	do
+		local id = RandomUziImage()
+		DecorImage(contentPanel, id, Aurora.UziOverlayTransparency, 0, true)
+	end
+
+	local container = New("Frame", {
+		Name = "Container",
+		BackgroundTransparency = 1,
+		Size = UDim2.fromScale(1, 1),
+		Position = UDim2.fromScale(0, 0),
+		ClipsDescendants = true,
+		Parent = contentPanel,
 	})
 	window.Container = container
 
@@ -1535,13 +1620,19 @@ function Aurora:CreateWindow(config)
 				end
 			end
 			page.CanvasPosition = Vector2.new(0, 0)
-			-- selected tab look
-			button.BackgroundTransparency = 0
+			-- selected tab look (follows UI transparency + Uzi decor on button)
+			button.BackgroundTransparency = UITrans(0)
 			button.BackgroundColor3 = Aurora.Theme.ElementHover
 			label.TextColor3 = Aurora.Theme.Text
 			indicator.Size = UDim2.fromOffset(3, 18)
 			if tabIcon then
 				tabIcon.ImageColor3 = tab.Color or Aurora.Theme.Accent
+			end
+			-- ensure Uzi layer visible on selected tab while theme is Uzi
+			local decor = button:FindFirstChild("AuroraDecor")
+			if decor and decor:IsA("ImageLabel") and ShouldUseUziImages() then
+				decor.Visible = true
+				decor.ImageTransparency = Aurora.UziOverlayTransparency
 			end
 			refreshPageCanvas()
 			task.defer(refreshPageCanvas)
@@ -1554,16 +1645,19 @@ function Aurora:CreateWindow(config)
 
 		button.MouseEnter:Connect(function()
 			if window.CurrentTab == tab then
-				button.BackgroundTransparency = 0
+				button.BackgroundTransparency = UITrans(0)
 				button.BackgroundColor3 = Aurora.Theme.ElementHover
 				return
 			end
-			Tween(button, 0.15, { BackgroundTransparency = 0.35, BackgroundColor3 = Aurora.Theme.Element })
+			Tween(button, 0.15, {
+				BackgroundTransparency = UITrans(0.35),
+				BackgroundColor3 = Aurora.Theme.Element,
+			})
 			Tween(label, 0.15, { TextColor3 = Aurora.Theme.Text })
 		end)
 		button.MouseLeave:Connect(function()
 			if window.CurrentTab == tab then
-				button.BackgroundTransparency = 0
+				button.BackgroundTransparency = UITrans(0)
 				button.BackgroundColor3 = Aurora.Theme.ElementHover
 				label.TextColor3 = Aurora.Theme.Text
 				return
@@ -1586,9 +1680,10 @@ function Aurora:CreateWindow(config)
 		------------------------------------------------------------
 		local function Base(height, interactive, style)
 			style = style or {}
+			local baseT = style.BackgroundTransparency or 0
 			local frame = New("Frame", {
 				Size = UDim2.new(1, 0, 0, height or 44),
-				BackgroundTransparency = style.BackgroundTransparency or 0,
+				BackgroundTransparency = baseT,
 				Active = false,
 				ClipsDescendants = true,
 				Theme = style.Color and nil or { BackgroundColor3 = "Element" },
@@ -1597,11 +1692,11 @@ function Aurora:CreateWindow(config)
 			})
 			Corner(10, frame)
 			Stroke(frame, "Stroke", 1, 0.55)
-			-- custom image OR uzi random
+			RegisterUIPart(window, frame, baseT)
+			-- custom image OR uzi random (whole UI follows Uzi when theme is Uzi)
 			if style.Image or style.BackgroundImage then
 				DecorImage(frame, style.Image or style.BackgroundImage, style.ImageTransparency or 0.4, 0, false)
-			elseif style.Uzi or style.Uzi == nil then
-				-- always track a layer; visibility follows theme
+			elseif style.Uzi ~= false then
 				local id = RandomUziImage()
 				DecorImage(frame, id, style.ImageTransparency or Aurora.UziOverlayTransparency, 0, true)
 			end
