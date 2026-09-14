@@ -7,7 +7,7 @@
    ██║  ██║╚██████╔╝██║  ██║╚██████╔╝██║  ██║██║  ██║    ╚██████╔╝██║
    ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝     ╚═════╝ ╚═╝
 
-   Aurora UI  •  v1.0.1
+   Aurora UI  •  v1.0.2
    A modern, lightweight and fully themeable interface library for Roblox.
 
    Usage:
@@ -36,7 +36,7 @@ local LocalPlayer = Players.LocalPlayer
 
 --// Library
 local Aurora = {
-	Version      = "1.0.1",
+	Version      = "1.0.2",
 	Flags        = {},   -- Flag -> value
 	Options      = {},   -- Flag -> element object
 	Windows      = {},
@@ -951,9 +951,16 @@ function Aurora:CreateWindow(config)
 		end
 	end)
 
-	--// Open animation
+	--// Open animation (then refresh active tab layout)
 	main.Size = UDim2.fromOffset(window.Size.X.Offset, 0)
-	Tween(main, 0.45, { Size = window.Size }, Enum.EasingStyle.Back)
+	local openTw = Tween(main, 0.45, { Size = window.Size }, Enum.EasingStyle.Back)
+	task.delay(0.5, function()
+		if window.Destroyed then return end
+		main.Size = window.Size
+		if window.CurrentTab and window.CurrentTab.Select then
+			pcall(function() window.CurrentTab:Select() end)
+		end
+	end)
 
 	----------------------------------------------------------------
 	-- TABS
@@ -1027,37 +1034,64 @@ function Aurora:CreateWindow(config)
 			Name = tab.Title,
 			BackgroundTransparency = 1,
 			BorderSizePixel = 0,
+			Active = true,
+			Selectable = false,
 			Size = UDim2.fromScale(1, 1),
 			Visible = false,
 			ScrollBarThickness = 3,
 			ScrollBarImageTransparency = 0.55,
-			CanvasSize = UDim2.new(),
+			CanvasSize = UDim2.new(0, 0, 0, 0),
 			AutomaticCanvasSize = Enum.AutomaticSize.Y,
+			ScrollingDirection = Enum.ScrollingDirection.Y,
+			ZIndex = 2,
 			Parent = container,
 		})
 		Bind(page, "ScrollBarImageColor3", "Stroke")
 		Padding(page, 14, 18, 14, 14)
-		List(page, 8)
+		local pageList = List(page, 8)
 		tab.Page = page
+		tab._pageList = pageList
+		-- Keep canvas in sync (AutomaticCanvasSize is flaky while window animates open)
+		pageList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+			local y = pageList.AbsoluteContentSize.Y + 36
+			page.CanvasSize = UDim2.new(0, 0, 0, math.max(y, 1))
+		end)
+
+		local function refreshPageCanvas()
+			local layout = page:FindFirstChildOfClass("UIListLayout")
+			if not layout then return end
+			local y = layout.AbsoluteContentSize.Y + 36
+			if y < 1 then y = 1 end
+			page.CanvasSize = UDim2.new(0, 0, 0, y)
+		end
 
 		function tab:Select()
 			if tab.Locked then return end
 			for _, other in ipairs(window.Tabs) do
 				if other ~= tab then
 					other.Page.Visible = false
-					Tween(other.Button, 0.18, { BackgroundTransparency = 1 })
-					Tween(other.Label, 0.18, { TextColor3 = Aurora.Theme.SubText })
-					Tween(other.Indicator, 0.18, { Size = UDim2.fromOffset(3, 0) })
-					if other.Icon then Tween(other.Icon, 0.18, { ImageColor3 = Aurora.Theme.SubText }) end
+					other.Button.BackgroundTransparency = 1
+					other.Button.BackgroundColor3 = Aurora.Theme.Element
+					other.Label.TextColor3 = Aurora.Theme.SubText
+					other.Indicator.Size = UDim2.fromOffset(3, 0)
+					if other.Icon then
+						other.Icon.ImageColor3 = Aurora.Theme.SubText
+					end
 				end
 			end
 			window.CurrentTab = tab
 			page.Visible = true
 			page.CanvasPosition = Vector2.new(0, 0)
-			Tween(button, 0.18, { BackgroundTransparency = 0 })
-			Tween(label, 0.18, { TextColor3 = Aurora.Theme.Text })
-			Tween(indicator, 0.25, { Size = UDim2.fromOffset(3, 16) }, Enum.EasingStyle.Back)
-			if tabIcon then Tween(tabIcon, 0.18, { ImageColor3 = tab.Color or Aurora.Theme.Accent }) end
+			-- clear selected look (instant so user always sees active tab)
+			button.BackgroundTransparency = 0
+			button.BackgroundColor3 = Aurora.Theme.ElementHover
+			label.TextColor3 = Aurora.Theme.Text
+			indicator.Size = UDim2.fromOffset(3, 18)
+			if tabIcon then
+				tabIcon.ImageColor3 = tab.Color or Aurora.Theme.Accent
+			end
+			refreshPageCanvas()
+			task.defer(refreshPageCanvas)
 			if tabConfig.Callback then task.spawn(tabConfig.Callback) end
 		end
 
@@ -1066,16 +1100,23 @@ function Aurora:CreateWindow(config)
 		tab.Icon = tabIcon
 
 		button.MouseEnter:Connect(function()
-			if window.CurrentTab ~= tab then
-				Tween(button, 0.15, { BackgroundTransparency = 0.55 })
-				Tween(label, 0.15, { TextColor3 = Aurora.Theme.Text })
+			if window.CurrentTab == tab then
+				button.BackgroundTransparency = 0
+				button.BackgroundColor3 = Aurora.Theme.ElementHover
+				return
 			end
+			Tween(button, 0.15, { BackgroundTransparency = 0.35, BackgroundColor3 = Aurora.Theme.Element })
+			Tween(label, 0.15, { TextColor3 = Aurora.Theme.Text })
 		end)
 		button.MouseLeave:Connect(function()
-			if window.CurrentTab ~= tab then
-				Tween(button, 0.15, { BackgroundTransparency = 1 })
-				Tween(label, 0.15, { TextColor3 = Aurora.Theme.SubText })
+			if window.CurrentTab == tab then
+				button.BackgroundTransparency = 0
+				button.BackgroundColor3 = Aurora.Theme.ElementHover
+				label.TextColor3 = Aurora.Theme.Text
+				return
 			end
+			Tween(button, 0.15, { BackgroundTransparency = 1, BackgroundColor3 = Aurora.Theme.Element })
+			Tween(label, 0.15, { TextColor3 = Aurora.Theme.SubText })
 		end)
 		local function onTabPress()
 			tab:Select()
@@ -1094,13 +1135,23 @@ function Aurora:CreateWindow(config)
 			local frame = New("Frame", {
 				Size = UDim2.new(1, 0, 0, height or 44),
 				BackgroundTransparency = 0,
+				Active = false,
 				Theme = { BackgroundColor3 = "Element" },
 				Parent = page,
 			})
 			Corner(10, frame)
 			Stroke(frame, "Stroke", 1, 0.55)
-			if interactive then Hoverable(frame, "Element", "ElementHover") end
+			if interactive then
+				frame.Active = true
+				Hoverable(frame, "Element", "ElementHover")
+			end
 			table.insert(tab.Elements, frame)
+			task.defer(function()
+				local layout = page:FindFirstChildOfClass("UIListLayout")
+				if layout then
+					page.CanvasSize = UDim2.new(0, 0, 0, math.max(layout.AbsoluteContentSize.Y + 36, 1))
+				end
+			end)
 			return frame
 		end
 
@@ -1266,9 +1317,12 @@ function Aurora:CreateWindow(config)
 			button.MouseLeave:Connect(function()
 				Tween(arrow, 0.18, { ImageColor3 = Aurora.Theme.SubText, Position = UDim2.new(1, -14, 0.5, 0) })
 			end)
-			button.MouseButton1Click:Connect(function()
+			local function onClick()
 				if cfg.Callback then task.spawn(cfg.Callback) end
-			end)
+			end
+			button.Active = true
+			button.MouseButton1Click:Connect(onClick)
+			button.Activated:Connect(onClick)
 
 			local object = { Instance = frame }
 			function object:SetTitle(text) buttonTitle.Text = text end
