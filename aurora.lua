@@ -7,7 +7,7 @@
    ██║  ██║╚██████╔╝██║  ██║╚██████╔╝██║  ██║██║  ██║    ╚██████╔╝██║
    ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝     ╚═════╝ ╚═╝
 
-   Aurora UI  •  v1.0.3
+   Aurora UI  •  v1.0.4
    A modern, lightweight and fully themeable interface library for Roblox.
 
    Usage:
@@ -36,7 +36,7 @@ local LocalPlayer = Players.LocalPlayer
 
 --// Library
 local Aurora = {
-	Version      = "1.0.3",
+	Version      = "1.0.4",
 	Flags        = {},   -- Flag -> value
 	Options      = {},   -- Flag -> element object
 	Windows      = {},
@@ -240,13 +240,96 @@ local function List(parent, padding, direction)
 	})
 end
 
-local function Icon(id)
-	if not id then return nil end
-	if typeof(id) == "number" then return "rbxassetid://" .. id end
-	if Aurora.Icons[string.lower(id)] then return Aurora.Icons[string.lower(id)] end
-	if string.match(id, "^%d+$") then return "rbxassetid://" .. id end
-	return id
+-- Lucide pack (Footagesus/Icons) — optional, loaded once
+local LucidePack = nil
+local LucideTried = false
+
+local function EnsureLucide()
+	if LucideTried then return LucidePack end
+	LucideTried = true
+	local ok, pack = pcall(function()
+		local src = game:HttpGet("https://raw.githubusercontent.com/Footagesus/Icons/refs/heads/main/lucide/dist/Icons.lua")
+		return loadstring(src)()
+	end)
+	if ok and type(pack) == "table" then
+		LucidePack = pack
+	end
+	return LucidePack
 end
+
+-- Returns: imageUrl, imageRectSize?, imageRectOffset?
+local function ResolveIcon(id)
+	if not id then return nil end
+	if typeof(id) == "number" then
+		return "rbxassetid://" .. tostring(id)
+	end
+	if typeof(id) == "string" then
+		if string.match(id, "^rbxassetid://") or string.match(id, "^http") then
+			return id
+		end
+		if string.match(id, "^%d+$") then
+			return "rbxassetid://" .. id
+		end
+		local lower = string.lower(id)
+		if Aurora.Icons[lower] then
+			return Aurora.Icons[lower]
+		end
+		-- lucide:name or plain name from lucide pack
+		local name = lower
+		local pure = string.match(lower, "^lucide[%-:](.+)$")
+		if pure then name = pure end
+		local pack = EnsureLucide()
+		if pack then
+			local icons = pack.Icons or pack
+			local entry = icons[name] or icons[id]
+			if type(entry) == "string" then
+				return entry
+			end
+			if type(entry) == "table" then
+				local image = entry.Image or entry.image
+				if type(image) == "number" then
+					image = "rbxassetid://" .. tostring(image)
+				end
+				if pack.Spritesheets and image and pack.Spritesheets[tostring(image)] then
+					image = pack.Spritesheets[tostring(image)] or image
+				end
+				-- Footagesus style: Image is spritesheet key index
+				if entry.Image and pack.Spritesheets then
+					local sheet = pack.Spritesheets[tostring(entry.Image)]
+					if sheet then image = sheet end
+				end
+				local rectSize = entry.ImageRectSize or entry.imageRectSize
+				local rectPos = entry.ImageRectPosition or entry.ImageRectOffset or entry.imageRectOffset
+				return image, rectSize, rectPos
+			end
+		end
+		return id
+	end
+	return nil
+end
+
+local function Icon(id)
+	local image = ResolveIcon(id)
+	return image
+end
+
+local function ApplyIcon(imageLabel, id)
+	if not imageLabel or not id then return end
+	local image, rectSize, rectPos = ResolveIcon(id)
+	if image then
+		imageLabel.Image = image
+	end
+	if typeof(rectSize) == "Vector2" then
+		imageLabel.ImageRectSize = rectSize
+	end
+	if typeof(rectPos) == "Vector2" then
+		imageLabel.ImageRectOffset = rectPos
+	end
+end
+
+Aurora.ApplyIcon = ApplyIcon
+Aurora.ResolveIcon = ResolveIcon
+Aurora.EnsureLucide = EnsureLucide
 
 local function Ripple(button)
 	button.ClipsDescendants = true
@@ -974,6 +1057,9 @@ function Aurora:CreateWindow(config)
 			Elements = {},
 		}
 
+		local hidden = tabConfig.Hidden == true or tabConfig.Visible == false
+		tab.Hidden = hidden
+
 		local button = New("TextButton", {
 			Text = "",
 			AutoButtonColor = false,
@@ -982,9 +1068,10 @@ function Aurora:CreateWindow(config)
 			ZIndex = 3,
 			Size = UDim2.new(1, 0, 0, 34),
 			BackgroundTransparency = 1,
+			Visible = not hidden,
 			LayoutOrder = tabConfig.Order or (#window.Tabs + 1),
 			Theme = { BackgroundColor3 = "Element" },
-			Parent = tabList,
+			Parent = hidden and nil or tabList,
 		})
 		Corner(9, button)
 		tab.TabButton = button
@@ -1006,7 +1093,7 @@ function Aurora:CreateWindow(config)
 		local tabIcon
 		if tabConfig.Icon then
 			tabIcon = New("ImageLabel", {
-				Image = Icon(tabConfig.Icon),
+				Image = "",
 				BackgroundTransparency = 1,
 				Position = UDim2.fromOffset(11, 9),
 				Size = UDim2.fromOffset(16, 16),
@@ -1014,6 +1101,7 @@ function Aurora:CreateWindow(config)
 				Theme = { ImageColor3 = "SubText" },
 				Parent = button,
 			})
+			ApplyIcon(tabIcon, tabConfig.Icon)
 		end
 
 		local label = New("TextLabel", {
@@ -1800,17 +1888,24 @@ function Aurora:CreateWindow(config)
 			cfg = cfg or {}
 			local key = cfg.Default or Enum.KeyCode.E
 			local listening = false
+			local ignoreUntil = 0
 			local frame = Base(cfg.Description and 52 or 42, false)
 			Labels(frame, cfg.Title or "Keybind", cfg.Description, 110)
 
+			local function keyLabel(k)
+				if typeof(k) == "EnumItem" then return k.Name end
+				return tostring(k)
+			end
+
 			local button = New("TextButton", {
-				Text = key.Name,
+				Text = keyLabel(key),
 				Font = Enum.Font.GothamBold,
 				TextSize = 12,
 				AutoButtonColor = false,
+				Active = true,
 				AnchorPoint = Vector2.new(1, 0.5),
 				Position = UDim2.new(1, -12, 0.5, 0),
-				Size = UDim2.fromOffset(80, 26),
+				Size = UDim2.fromOffset(88, 26),
 				BackgroundTransparency = 0,
 				Theme = { TextColor3 = "Text", BackgroundColor3 = "ElementHover" },
 				Parent = frame,
@@ -1820,37 +1915,62 @@ function Aurora:CreateWindow(config)
 
 			local object = { Instance = frame, Value = key, Type = "Keybind" }
 
-			button.MouseButton1Click:Connect(function()
+			local function beginListen()
 				listening = true
+				ignoreUntil = tick() + 0.3
 				button.Text = "..."
-			end)
+			end
+
+			button.MouseButton1Click:Connect(beginListen)
+			button.Activated:Connect(beginListen)
 
 			local keyConnection = Connect(UserInputService.InputBegan, function(input, processed)
-				if listening and input.UserInputType == Enum.UserInputType.Keyboard then
+				if listening then
+					if input.UserInputType ~= Enum.UserInputType.Keyboard then
+						return
+					end
+					if tick() < ignoreUntil then
+						return
+					end
+					-- Escape cancels rebind — keep previous key, do not show a new one
 					if input.KeyCode == Enum.KeyCode.Escape then
 						listening = false
-						button.Text = key.Name
+						button.Text = keyLabel(key)
+						return
+					end
+					-- Unknown / None
+					if input.KeyCode == Enum.KeyCode.Unknown then
 						return
 					end
 					key = input.KeyCode
 					object.Value = key
-					button.Text = key.Name
+					button.Text = keyLabel(key)
 					listening = false
 					if cfg.Flag then Aurora.Flags[cfg.Flag] = key end
 					if cfg.Changed then task.spawn(cfg.Changed, key) end
 					return
 				end
-				if not processed and not listening and input.KeyCode == key then
+				-- Fire callback only when not rebinding
+				if not processed and input.KeyCode == key then
 					if cfg.Callback then task.spawn(cfg.Callback, key) end
 				end
 			end)
 
-			function object:Set(newKey) key = newKey; button.Text = newKey.Name end
+			function object:Set(newKey)
+				key = newKey
+				object.Value = newKey
+				if not listening then
+					button.Text = keyLabel(newKey)
+				end
+			end
 			function object:Destroy()
 				keyConnection:Disconnect()
 				frame:Destroy()
 			end
-			if cfg.Flag then Aurora.Options[cfg.Flag] = object end
+			if cfg.Flag then
+				Aurora.Flags[cfg.Flag] = key
+				Aurora.Options[cfg.Flag] = object
+			end
 			return object
 		end
 
@@ -1866,7 +1986,13 @@ function Aurora:CreateWindow(config)
 		tab.Divider   = tab.CreateDivider
 
 		table.insert(window.Tabs, tab)
-		if #window.Tabs == 1 then tab:Select() end
+		if not hidden then
+			local visibleCount = 0
+			for _, t in ipairs(window.Tabs) do
+				if not t.Hidden then visibleCount += 1 end
+			end
+			if visibleCount == 1 then tab:Select() end
+		end
 		return tab
 	end
 
@@ -1883,7 +2009,12 @@ function Aurora:CreateWindow(config)
 			settingsTab:Select()
 			return settingsTab
 		end
-		settingsTab = window:CreateTab({ Title = "Settings", Icon = "rbxassetid://10734950309", Order = 999 })
+		settingsTab = window:CreateTab({
+			Title = "Settings",
+			Icon = "settings",
+			Order = 999,
+			Hidden = true, -- not listed in sidebar; only via gear
+		})
 		settingsTab:CreateSection("Interface")
 
 		local themeNames = {}
