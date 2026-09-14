@@ -7,7 +7,7 @@
    ██║  ██║╚██████╔╝██║  ██║╚██████╔╝██║  ██║██║  ██║    ╚██████╔╝██║
    ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝     ╚═════╝ ╚═╝
 
-   Aurora UI  •  v1.1.2
+   Aurora UI  •  v1.1.3
    A modern, lightweight and fully themeable interface library for Roblox.
 
    Usage:
@@ -36,7 +36,7 @@ local LocalPlayer = Players.LocalPlayer
 
 --// Library
 local Aurora = {
-	Version      = "1.1.2",
+	Version      = "1.1.3",
 	Flags        = {},   -- Flag -> value
 	Options      = {},   -- Flag -> element object
 	Windows      = {},
@@ -227,7 +227,9 @@ Aurora.Icons = {
 -- UTILITIES
 ----------------------------------------------------------------------
 local ThemeBindings = {}   -- { Object, Property, Token, Modifier }
-local UziDecorList = {}    -- ImageLabels created for Uzi theme (cleared on theme switch)
+-- Uzi overlays: never destroyed on theme switch — only transparency toggled
+-- entry = { Image = ImageLabel, Base = number (0..1 visible transparency when Uzi on) }
+local UziDecorList = {}
 
 local function New(class, props, children)
 	local inst = Instance.new(class)
@@ -323,53 +325,143 @@ local function RandomUziImage()
 	return list[math.random(1, #list)]
 end
 
-local UZI_TRANSPARENCY = 0.8 -- 80% transparent overlays
-
-local function ClearUziDecor()
-	for i = #UziDecorList, 1, -1 do
-		local img = UziDecorList[i]
-		UziDecorList[i] = nil
-		if img then
-			pcall(function()
-				img:Destroy()
-			end)
-		end
-	end
-	table.clear(UziDecorList)
-end
-
--- Image behind UI (tabs, cards, buttons). Returns the ImageLabel.
--- trackAsUzi=true → removed automatically when leaving Uzi theme
-local function DecorImage(parent, imageId, transparency, z, trackAsUzi)
-	if not parent or not imageId then return nil end
-	if typeof(imageId) == "number" then
-		imageId = "rbxassetid://" .. tostring(imageId)
-	end
-	for _, child in ipairs(parent:GetChildren()) do
-		if child.Name == "AuroraDecor" and child:IsA("ImageLabel") then
-			child:Destroy()
-		end
-	end
-	local img = New("ImageLabel", {
-		Name = "AuroraDecor",
-		BackgroundTransparency = 1,
-		BorderSizePixel = 0,
-		Size = UDim2.fromScale(1, 1),
-		Position = UDim2.fromScale(0, 0),
-		Image = imageId,
-		ScaleType = Enum.ScaleType.Crop,
-		ImageTransparency = transparency == nil and UZI_TRANSPARENCY or transparency,
-		ZIndex = z or 0,
-		Parent = parent,
-	})
-	if trackAsUzi then
-		table.insert(UziDecorList, img)
-	end
-	return img
-end
+-- Defaults (can change via SetUziTransparency / SetUITransparency)
+Aurora.UziOverlayTransparency = 0.8 -- tabs / elements / page (80% transparent)
+Aurora.UziWindowTransparency = 0.5 -- main window root art (50% transparent)
+Aurora.UITransparency = 0 -- extra fade on main BackgroundTransparency (0 = opaque colors)
 
 local function ShouldUseUziImages()
 	return Aurora.Theme and Aurora.Theme.UseUziImages == true
+end
+
+local function PruneUziDecor()
+	for i = #UziDecorList, 1, -1 do
+		local entry = UziDecorList[i]
+		local img = entry and entry.Image
+		if not img or not img.Parent then
+			table.remove(UziDecorList, i)
+		end
+	end
+end
+
+-- Hide without Destroy so switching back to Uzi can restore
+local function HideUziDecor()
+	PruneUziDecor()
+	for _, entry in ipairs(UziDecorList) do
+		local img = entry.Image
+		if img then
+			img.ImageTransparency = 1
+			if entry.HideFully then
+				img.Visible = false
+			end
+		end
+	end
+end
+
+local function ShowUziDecor()
+	PruneUziDecor()
+	local on = ShouldUseUziImages()
+	for _, entry in ipairs(UziDecorList) do
+		local img = entry.Image
+		if img then
+			-- ensure an image is assigned (first enable or empty page bg)
+			if (not img.Image or img.Image == "") and on then
+				local id = RandomUziImage()
+				if id then img.Image = id end
+			end
+			if on then
+				img.Visible = true
+				img.ImageTransparency = entry.Base ~= nil and entry.Base or Aurora.UziOverlayTransparency
+			else
+				img.ImageTransparency = 1
+				if entry.HideFully then
+					img.Visible = false
+				end
+			end
+		end
+	end
+end
+
+local function TrackUzi(img, baseTransparency, hideFully)
+	if not img then return img end
+	table.insert(UziDecorList, {
+		Image = img,
+		Base = baseTransparency ~= nil and baseTransparency or Aurora.UziOverlayTransparency,
+		HideFully = hideFully == true,
+	})
+	return img
+end
+
+-- Image behind UI. trackAsUzi=true → toggled with theme (transparency), not destroyed
+local function DecorImage(parent, imageId, transparency, z, trackAsUzi)
+	if not parent then return nil end
+	if imageId and typeof(imageId) == "number" then
+		imageId = "rbxassetid://" .. tostring(imageId)
+	end
+	-- reuse existing AuroraDecor on parent when possible
+	local img
+	for _, child in ipairs(parent:GetChildren()) do
+		if child.Name == "AuroraDecor" and child:IsA("ImageLabel") then
+			img = child
+			break
+		end
+	end
+	if not img then
+		img = New("ImageLabel", {
+			Name = "AuroraDecor",
+			BackgroundTransparency = 1,
+			BorderSizePixel = 0,
+			Size = UDim2.fromScale(1, 1),
+			Position = UDim2.fromScale(0, 0),
+			Image = imageId or "",
+			ScaleType = Enum.ScaleType.Crop,
+			ImageTransparency = 1,
+			ZIndex = z or 0,
+			Parent = parent,
+		})
+	else
+		if imageId then img.Image = imageId end
+		img.ZIndex = z or img.ZIndex
+	end
+
+	local base = transparency
+	if base == nil then
+		base = Aurora.UziOverlayTransparency
+	end
+
+	if trackAsUzi then
+		-- avoid double-track
+		local found = false
+		for _, entry in ipairs(UziDecorList) do
+			if entry.Image == img then
+				entry.Base = base
+				found = true
+				break
+			end
+		end
+		if not found then
+			TrackUzi(img, base, false)
+		end
+		if ShouldUseUziImages() then
+			if (not img.Image or img.Image == "") and imageId then
+				img.Image = imageId
+			elseif not img.Image or img.Image == "" then
+				local id = RandomUziImage()
+				if id then img.Image = id end
+			end
+			img.Visible = true
+			img.ImageTransparency = base
+		else
+			img.ImageTransparency = 1
+		end
+	else
+		if imageId then
+			img.Image = imageId
+			img.ImageTransparency = base
+			img.Visible = true
+		end
+	end
+	return img
 end
 
 -- Apply optional Color / Image / ImageTransparency from element config
@@ -383,13 +475,10 @@ local function StyleFrame(frame, style)
 	end
 	local image = style.Image or style.BackgroundImage
 	if image then
-		-- explicit image is not cleared on theme switch
 		DecorImage(frame, image, style.ImageTransparency or 0.45, 0, false)
 	elseif style.Uzi or (ShouldUseUziImages() and style.Uzi ~= false) then
 		local id = RandomUziImage()
-		if id then
-			DecorImage(frame, id, style.ImageTransparency or UZI_TRANSPARENCY, 0, true)
-		end
+		DecorImage(frame, id, style.ImageTransparency or Aurora.UziOverlayTransparency, 0, true)
 	end
 end
 
@@ -405,6 +494,37 @@ function Aurora:SetUziImages(list)
 	end
 	if #out > 0 then
 		Aurora.UziImages = out
+	end
+end
+
+-- overlayT: tabs/elements/pages (default 0.8). windowT: main window art (default 0.5)
+function Aurora:SetUziTransparency(overlayT, windowT)
+	if typeof(overlayT) == "number" then
+		Aurora.UziOverlayTransparency = math.clamp(overlayT, 0, 1)
+	end
+	if typeof(windowT) == "number" then
+		Aurora.UziWindowTransparency = math.clamp(windowT, 0, 1)
+	end
+	for _, entry in ipairs(UziDecorList) do
+		if entry.Kind == "window" then
+			entry.Base = Aurora.UziWindowTransparency
+		elseif not entry.FixedBase then
+			entry.Base = Aurora.UziOverlayTransparency
+		end
+	end
+	if ShouldUseUziImages() then
+		ShowUziDecor()
+	end
+end
+
+function Aurora:SetUITransparency(t)
+	if typeof(t) ~= "number" then return end
+	Aurora.UITransparency = math.clamp(t, 0, 0.85)
+	for _, window in ipairs(Aurora.Windows) do
+		local main = window.Main
+		if main then
+			main.BackgroundTransparency = Aurora.UITransparency
+		end
 	end
 end
 
@@ -604,9 +724,9 @@ function Aurora:SetTheme(name)
 	end
 	if theme.UseUziImages == true then
 		Aurora.Theme.UseUziImages = true
+		ShowUziDecor() -- restore textures via transparency (no recreate)
 	else
-		-- leaving Uzi → strip all random Uzi overlays
-		ClearUziDecor()
+		HideUziDecor() -- keep ImageLabels, fully transparent
 	end
 
 	-- walk backwards so destroyed instances can be pruned in the same pass
@@ -792,12 +912,26 @@ function Aurora:CreateWindow(config)
 	Stroke(main, "Stroke", 1, 0.2)
 	window.Main = main
 	main.ClipsDescendants = true
+	main.BackgroundTransparency = Aurora.UITransparency or 0
+
+	-- Lowest layer: full-window art (Uzi @ 50% when theme is Uzi; toggled by transparency)
+	local windowArt
 	if config.BackgroundImage then
-		DecorImage(main, config.BackgroundImage, config.BackgroundImageTransparency or 0.55, 0, false)
-	elseif ShouldUseUziImages() then
+		windowArt = DecorImage(main, config.BackgroundImage, config.BackgroundImageTransparency or 0.55, 0, false)
+	else
 		local id = RandomUziImage()
-		if id then DecorImage(main, id, UZI_TRANSPARENCY, 0, true) end
+		windowArt = DecorImage(main, id, Aurora.UziWindowTransparency, 0, true)
+		-- mark as window so SetUziTransparency updates Base correctly
+		for _, entry in ipairs(UziDecorList) do
+			if entry.Image == windowArt then
+				entry.Kind = "window"
+				entry.Base = Aurora.UziWindowTransparency
+				entry.FixedBase = true
+				break
+			end
+		end
 	end
+	window.WindowArt = windowArt
 
 	-- UIScale must live inside a GuiObject, not the ScreenGui
 	local scaler = New("UIScale", { Scale = config.Scale or 1, Parent = main })
@@ -1261,11 +1395,12 @@ function Aurora:CreateWindow(config)
 		if tabConfig.Color then
 			button.BackgroundColor3 = tabConfig.Color
 		end
+		-- Tab button always gets a tracked Uzi layer (shown only while theme is Uzi)
 		if tabConfig.Image or tabConfig.BackgroundImage then
 			DecorImage(button, tabConfig.Image or tabConfig.BackgroundImage, tabConfig.ImageTransparency or 0.5, 0, false)
-		elseif ShouldUseUziImages() then
+		else
 			local id = RandomUziImage()
-			if id then DecorImage(button, id, UZI_TRANSPARENCY, 0, true) end
+			DecorImage(button, id, Aurora.UziOverlayTransparency, 0, true)
 		end
 
 		local indicator = New("Frame", {
@@ -1317,18 +1452,23 @@ function Aurora:CreateWindow(config)
 			Size = UDim2.fromScale(1, 1),
 			Position = UDim2.fromScale(0, 0),
 			ScaleType = Enum.ScaleType.Crop,
-			ImageTransparency = UZI_TRANSPARENCY,
+			ImageTransparency = 1,
 			Image = "",
 			Visible = false,
 			ZIndex = 1,
 			Parent = container,
 		})
 		tab.PageBg = pageBg
-		if ShouldUseUziImages() then
+		do
 			local id = RandomUziImage()
-			if id then
-				pageBg.Image = id
-				table.insert(UziDecorList, pageBg)
+			if id then pageBg.Image = id end
+			TrackUzi(pageBg, Aurora.UziOverlayTransparency, true)
+			if ShouldUseUziImages() then
+				pageBg.ImageTransparency = Aurora.UziOverlayTransparency
+				pageBg.Visible = false -- Select() shows the active tab bg
+			else
+				pageBg.ImageTransparency = 1
+				pageBg.Visible = false
 			end
 		end
 
@@ -1388,11 +1528,14 @@ function Aurora:CreateWindow(config)
 			window.CurrentTab = tab
 			page.Visible = true
 			if pageBg then
-				-- only show Uzi page art while Uzi theme is active and image set
-				pageBg.Visible = pageBg.Image ~= "" and pageBg.Parent ~= nil
+				local uziOn = ShouldUseUziImages() and pageBg.Image ~= "" and pageBg.Parent ~= nil
+				pageBg.Visible = uziOn
+				if uziOn then
+					pageBg.ImageTransparency = Aurora.UziOverlayTransparency
+				end
 			end
 			page.CanvasPosition = Vector2.new(0, 0)
-			-- clear selected look (instant so user always sees active tab)
+			-- selected tab look
 			button.BackgroundTransparency = 0
 			button.BackgroundColor3 = Aurora.Theme.ElementHover
 			label.TextColor3 = Aurora.Theme.Text
@@ -1456,10 +1599,11 @@ function Aurora:CreateWindow(config)
 			Stroke(frame, "Stroke", 1, 0.55)
 			-- custom image OR uzi random
 			if style.Image or style.BackgroundImage then
-				DecorImage(frame, style.Image or style.BackgroundImage, style.ImageTransparency or 0.4, 0)
-			elseif style.Uzi or (ShouldUseUziImages() and style.Uzi ~= false) then
+				DecorImage(frame, style.Image or style.BackgroundImage, style.ImageTransparency or 0.4, 0, false)
+			elseif style.Uzi or style.Uzi == nil then
+				-- always track a layer; visibility follows theme
 				local id = RandomUziImage()
-				if id then DecorImage(frame, id, style.ImageTransparency or UZI_TRANSPARENCY, 0, true) end
+				DecorImage(frame, id, style.ImageTransparency or Aurora.UziOverlayTransparency, 0, true)
 			end
 			if interactive then
 				frame.Active = true
@@ -2267,16 +2411,42 @@ function Aurora:CreateWindow(config)
 		settingsTab:CreateSection("Themes")
 		settingsTab:CreateDropdown({
 			Title = "Theme",
-			Description = "All built-in themes (Uzi uses texture image IDs)",
+			Description = "Uzi textures hide/show via transparency (no destroy)",
 			Values = themeNames,
 			Default = Aurora.ThemeName,
 			Callback = function(value)
 				Aurora:SetTheme(value)
 				Aurora:Notify({
 					Title = "Theme",
-					Content = "Switched to " .. tostring(value) .. (value == "Uzi" and " — reopen or new elements get images" or ""),
-					Duration = 2.5,
+					Content = "Switched to " .. tostring(value),
+					Duration = 2,
 				})
+			end,
+		})
+
+		settingsTab:CreateSection("Transparency")
+		settingsTab:CreateSlider({
+			Title = "UI Transparency",
+			Description = "Fades the main window background color",
+			Min = 0, Max = 80, Default = math.floor((Aurora.UITransparency or 0) * 100), Suffix = "%",
+			Callback = function(value)
+				Aurora:SetUITransparency(value / 100)
+			end,
+		})
+		settingsTab:CreateSlider({
+			Title = "Uzi Overlay Transparency",
+			Description = "Tabs, elements, page art (higher = more see-through)",
+			Min = 50, Max = 95, Default = math.floor((Aurora.UziOverlayTransparency or 0.8) * 100), Suffix = "%",
+			Callback = function(value)
+				Aurora:SetUziTransparency(value / 100, nil)
+			end,
+		})
+		settingsTab:CreateSlider({
+			Title = "Uzi Window Transparency",
+			Description = "Full-window background art",
+			Min = 30, Max = 95, Default = math.floor((Aurora.UziWindowTransparency or 0.5) * 100), Suffix = "%",
+			Callback = function(value)
+				Aurora:SetUziTransparency(nil, value / 100)
 			end,
 		})
 
@@ -2332,7 +2502,16 @@ end
 -- GLOBAL HELPERS
 ----------------------------------------------------------------------
 function Aurora:Unload()
-	ClearUziDecor()
+	for i = #UziDecorList, 1, -1 do
+		local entry = UziDecorList[i]
+		UziDecorList[i] = nil
+		if entry and entry.Image then
+			pcall(function()
+				entry.Image:Destroy()
+			end)
+		end
+	end
+	table.clear(UziDecorList)
 	for _, window in ipairs(table.clone(Aurora.Windows)) do
 		pcall(function() window:Destroy() end)
 	end
