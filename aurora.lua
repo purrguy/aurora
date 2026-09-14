@@ -7,7 +7,7 @@
    ██║  ██║╚██████╔╝██║  ██║╚██████╔╝██║  ██║██║  ██║    ╚██████╔╝██║
    ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝     ╚═════╝ ╚═╝
 
-   Aurora UI  •  v1.0.5
+   Aurora UI  •  v1.1.1
    A modern, lightweight and fully themeable interface library for Roblox.
 
    Usage:
@@ -36,7 +36,7 @@ local LocalPlayer = Players.LocalPlayer
 
 --// Library
 local Aurora = {
-	Version      = "1.0.5",
+	Version      = "1.1.1",
 	Flags        = {},   -- Flag -> value
 	Options      = {},   -- Flag -> element object
 	Windows      = {},
@@ -183,13 +183,18 @@ Aurora.Themes = {
 	},
 }
 
--- Image IDs used by theme "Uzi" (and SetUziImages)
+-- Texture / Image asset IDs for theme "Uzi" (NOT catalog page IDs — those don't load in ImageLabel)
+-- Proven IsLoaded=true via UziTex test
 Aurora.UziImages = {
-	"rbxassetid://17241967074",
-	"rbxassetid://7951058019",
-	"rbxassetid://12704861818",
-	"rbxassetid://9457982962",
-	"rbxassetid://13735942638",
+	"rbxassetid://9457982945",
+	"rbxassetid://13735904025",
+	"rbxassetid://12704861777",
+	"rbxassetid://7951057995",
+	"rbxassetid://12645935805",
+	"rbxassetid://13735942612",
+	"rbxassetid://12711037723",
+	"rbxassetid://13735938253",
+	"rbxassetid://15637228043",
 }
 
 Aurora.Theme = table.clone(Aurora.Themes.Aurora)
