@@ -7,7 +7,7 @@
    ██║  ██║╚██████╔╝██║  ██║╚██████╔╝██║  ██║██║  ██║    ╚██████╔╝██║
    ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝     ╚═════╝ ╚═╝
 
-   Aurora UI  •  v1.1.4
+   Aurora UI  •  v1.2.0
    A modern, lightweight and fully themeable interface library for Roblox.
 
    Usage:
@@ -36,7 +36,7 @@ local LocalPlayer = Players.LocalPlayer
 
 --// Library
 local Aurora = {
-	Version      = "1.1.4",
+	Version      = "1.2.0",
 	Flags        = {},   -- Flag -> value
 	Options      = {},   -- Flag -> element object
 	Windows      = {},
@@ -120,21 +120,6 @@ Aurora.Themes = {
 		Success       = Color3.fromRGB(36, 176, 118),
 		Danger        = Color3.fromRGB(226, 68, 84),
 	},
-	-- Black & white
-	Mono = {
-		Accent        = Color3.fromRGB(255, 255, 255),
-		AccentSoft    = Color3.fromRGB(210, 210, 210),
-		Background    = Color3.fromRGB(8, 8, 8),
-		Sidebar       = Color3.fromRGB(12, 12, 12),
-		Topbar        = Color3.fromRGB(10, 10, 10),
-		Element       = Color3.fromRGB(18, 18, 18),
-		ElementHover  = Color3.fromRGB(28, 28, 28),
-		Stroke        = Color3.fromRGB(48, 48, 48),
-		Text          = Color3.fromRGB(245, 245, 245),
-		SubText       = Color3.fromRGB(150, 150, 150),
-		Success       = Color3.fromRGB(200, 200, 200),
-		Danger        = Color3.fromRGB(255, 255, 255),
-	},
 	-- Gold (Greedy-style)
 	Gold = {
 		Accent        = Color3.fromRGB(232, 195, 106),
@@ -149,21 +134,6 @@ Aurora.Themes = {
 		SubText       = Color3.fromRGB(180, 155, 110),
 		Success       = Color3.fromRGB(200, 180, 90),
 		Danger        = Color3.fromRGB(220, 90, 70),
-	},
-	-- Dark blue
-	Navy = {
-		Accent        = Color3.fromRGB(70, 130, 255),
-		AccentSoft    = Color3.fromRGB(120, 170, 255),
-		Background    = Color3.fromRGB(6, 10, 22),
-		Sidebar       = Color3.fromRGB(8, 14, 28),
-		Topbar        = Color3.fromRGB(7, 12, 26),
-		Element       = Color3.fromRGB(12, 20, 38),
-		ElementHover  = Color3.fromRGB(18, 28, 52),
-		Stroke        = Color3.fromRGB(30, 48, 80),
-		Text          = Color3.fromRGB(220, 230, 255),
-		SubText       = Color3.fromRGB(130, 150, 190),
-		Success       = Color3.fromRGB(80, 200, 180),
-		Danger        = Color3.fromRGB(255, 100, 120),
 	},
 	-- Uzi: dark base + random image overlays (see Aurora.UziImages)
 	Uzi = {
@@ -181,6 +151,39 @@ Aurora.Themes = {
 		Danger        = Color3.fromRGB(255, 80, 100),
 		UseUziImages  = true,
 	},
+	-- Halloween: muted orange (accent #de7e23), seasonal decor in Topbar corners
+	Halloween = {
+		Accent        = Color3.fromRGB(222, 126, 35),
+		AccentSoft    = Color3.fromRGB(240, 178, 105),
+		Background    = Color3.fromRGB(58, 38, 21),
+		Sidebar       = Color3.fromRGB(69, 45, 25),
+		Topbar        = Color3.fromRGB(64, 42, 23),
+		Element       = Color3.fromRGB(86, 57, 31),
+		ElementHover  = Color3.fromRGB(104, 70, 38),
+		Stroke        = Color3.fromRGB(152, 108, 62),
+		Text          = Color3.fromRGB(255, 246, 232),
+		SubText       = Color3.fromRGB(222, 182, 142),
+		Success       = Color3.fromRGB(160, 210, 130),
+		Danger        = Color3.fromRGB(215, 85, 60),
+		Seasonal      = "Halloween",
+	},
+	-- Christmas: soft greyish-white festive (easy on the eyes), seasonal decor + snowfall
+	Christmas = {
+		Accent        = Color3.fromRGB(198, 58, 68),
+		AccentSoft    = Color3.fromRGB(228, 130, 138),
+		Background    = Color3.fromRGB(206, 209, 218),
+		Sidebar       = Color3.fromRGB(196, 200, 211),
+		Topbar        = Color3.fromRGB(199, 203, 214),
+		Element       = Color3.fromRGB(226, 229, 237),
+		ElementHover  = Color3.fromRGB(216, 220, 230),
+		Stroke        = Color3.fromRGB(172, 178, 194),
+		Text          = Color3.fromRGB(58, 63, 78),
+		SubText       = Color3.fromRGB(118, 124, 142),
+		Success       = Color3.fromRGB(52, 160, 105),
+		Danger        = Color3.fromRGB(198, 58, 68),
+		Seasonal      = "Christmas",
+		UseChristmasColors = true,
+	},
 }
 
 -- Texture / Image asset IDs for theme "Uzi" (NOT catalog page IDs — those don't load in ImageLabel)
@@ -196,6 +199,40 @@ Aurora.UziImages = {
 	"rbxassetid://13735938253",
 	"rbxassetid://15637228043",
 }
+
+-- Seasonal decor asset IDs (ImageLabel-ready strings)
+-- NOTE: Halloween IDs are Decals (AssetTypeId 13), which do NOT load via
+-- rbxassetid:// in an ImageLabel, so they use rbxthumb render URLs instead.
+-- If you ever get the raw Image IDs, swap them to rbxassetid:// form.
+Aurora.SeasonalAssets = {
+	Halloween = {
+		Pumpkin = "rbxthumb://type=Asset&id=4019390863&w=420&h=420", -- top-right of Topbar
+		Bat     = "rbxthumb://type=Asset&id=4019358804&w=420&h=420", -- top-left of Topbar
+	},
+	Christmas = {
+		Snowflake = "rbxassetid://137831469",   -- falling snow (60% transparent)
+		Snowman   = "rbxassetid://11932370255", -- bottom-left corner, slightly transparent
+		Tree      = "rbxassetid://10777958360",  -- bottom-right corner, 80% transparent
+	},
+}
+Aurora.SnowflakeTransparency = 0.6
+Aurora.SnowmanTransparency = 0.25
+Aurora.TreeTransparency = 0.8
+
+-- Opt-out: set true globally or per-window (config.DisableSeasonal) to stop auto seasonal
+Aurora.DisableSeasonal = false
+
+function Aurora:GetSeasonalTheme()
+	local ok, d = pcall(function() return os.date("*t") end)
+	if not ok or type(d) ~= "table" then return nil end
+	if d.month == 12 and d.day >= 1 then
+		return "Christmas"
+	end
+	if d.month == 10 then
+		return "Halloween"
+	end
+	return nil
+end
 
 Aurora.Theme = table.clone(Aurora.Themes.Aurora)
 Aurora.ThemeName = "Aurora"
@@ -676,6 +713,20 @@ local function Ripple(button)
 	end)
 end
 
+-- MouseButton1Click AND Activated both fire on a single mouse click, which
+-- double-runs callbacks (double notifications, double tab selects). Connect
+-- the SAME wrapped handler to both signals and the second fire is ignored.
+local function SingleFire(fn, windowMs)
+	local last = 0
+	windowMs = windowMs or 0.3
+	return function(...)
+		local now = tick()
+		if now - last < windowMs then return end
+		last = now
+		return fn(...)
+	end
+end
+
 local function Hoverable(object, base, hover)
 	object.MouseEnter:Connect(function()
 		Tween(object, 0.16, { BackgroundColor3 = Aurora.Theme[hover] })
@@ -749,6 +800,223 @@ local function Protect(gui)
 end
 
 ----------------------------------------------------------------------
+-- SEASONAL DECOR (Halloween / Christmas overlays per window)
+----------------------------------------------------------------------
+local function ClearSeasonalDecor(window)
+	if not window then return end
+	window.SnowLoop = nil
+	if window.SeasonalConns then
+		for _, conn in ipairs(window.SeasonalConns) do
+			pcall(function() conn:Disconnect() end)
+		end
+		table.clear(window.SeasonalConns)
+	end
+	if window.TitleLabel and window.TitleLabel.Parent then
+		local left = (window.TitleIcon and window.TitleIcon.Parent) and 48 or 16
+		window.TitleLabel.Position = UDim2.fromOffset(left, 6)
+		window.TitleLabel.Size = UDim2.new(1, -(left + 118), 0, 16)
+	end
+	if window.SubLabel and window.SubLabel.Parent then
+		local left = (window.TitleIcon and window.TitleIcon.Parent) and 48 or 16
+		window.SubLabel.Position = UDim2.fromOffset(left, 24)
+		window.SubLabel.Size = UDim2.new(1, -(left + 118), 0, 14)
+	end
+	window.HalloweenDecor = nil
+	if not window.SeasonalDecor then return end
+	for _, obj in ipairs(window.SeasonalDecor) do
+		pcall(function() obj:Destroy() end)
+	end
+	table.clear(window.SeasonalDecor)
+	window.SnowLoop = nil
+end
+
+local function StartSnowfall(window, holder, count, flakeImage)
+	if not window or not holder or not holder.Parent then return end
+	window.SnowLoop = true
+	task.spawn(function()
+		local flakes = {}
+		for _ = 1, (count or 14) do
+			if not window.SnowLoop or window.Destroyed then break end
+			if not holder.Parent then break end
+			local size = math.random(6, 12)
+			local flake = New("ImageLabel", {
+				Image = flakeImage,
+				BackgroundTransparency = 1,
+				ImageTransparency = Aurora.SnowflakeTransparency or 0.6,
+				ImageColor3 = Color3.fromRGB(170, 195, 230),
+				Size = UDim2.fromOffset(size, size),
+				Position = UDim2.new(math.random(), 0, 0, -20),
+				ZIndex = 50,
+				Parent = holder,
+			})
+			table.insert(window.SeasonalDecor, flake)
+			table.insert(flakes, flake)
+		end
+		while window.SnowLoop and not window.Destroyed and holder.Parent do
+			for _, flake in ipairs(flakes) do
+				if flake.Parent then
+					local pos = flake.Position
+					local speed = math.random(40, 90) / 1000
+					local sway = math.sin(tick() * 2 + flake.AbsolutePosition.X / 40) * 0.0015
+					local nx = math.clamp(pos.X.Scale + sway, 0, 1)
+					local ny = pos.Y.Scale + speed * 0.06
+					if ny >= 1 then ny = 0; nx = math.random() end
+					flake.Position = UDim2.new(nx, 0, ny, 0)
+					flake.Rotation = (flake.Rotation + 1) % 360
+				end
+			end
+			task.wait(0.03)
+		end
+	end)
+end
+
+local function SyncCornerDecor(window)
+	-- Keeps corner decor glued to the window corners. They live in the ScreenGui
+	-- (not inside the window) so they can hang half outside instead of being clipped.
+	local main = window.Main
+	local hw = window.HalloweenDecor
+	if not main or not hw then return end
+	local vis = main.Visible and main.Parent ~= nil
+	hw.Pumpkin.Visible = vis
+	hw.Bat.Visible = vis
+	if not vis then return end
+	local ax, px = main.Position.X.Scale, main.Position.X.Offset
+	local ay, py = main.Position.Y.Scale, main.Position.Y.Offset
+	local w, h = main.AbsoluteSize.X, main.AbsoluteSize.Y
+	hw.Pumpkin.Position = UDim2.new(ax, px + w / 2, ay, py - h / 2)
+	hw.Bat.Position = UDim2.new(ax, px - w / 2, ay, py - h / 2)
+end
+
+local function EnsureSeasonalDecor(window, topbar, contentPanel)
+	ClearSeasonalDecor(window)
+	window.SeasonalDecor = window.SeasonalDecor or {}
+	window.SeasonalConns = window.SeasonalConns or {}
+	local seasonal = Aurora.Theme and Aurora.Theme.Seasonal
+	if seasonal == "Halloween" then
+		-- centered ON the outer top corners (half in, half out), above everything.
+		-- ImageLabels don't take input, so clicks pass through underneath.
+		local screen = window.ScreenGui
+		local pumpkin = New("ImageLabel", {
+			Name = "HalloweenPumpkin",
+			Image = Aurora.SeasonalAssets.Halloween.Pumpkin,
+			BackgroundTransparency = 1,
+			Active = false,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Size = UDim2.fromOffset(64, 64),
+			ZIndex = 100,
+			Parent = screen,
+		})
+		local bat = New("ImageLabel", {
+			Name = "HalloweenBat",
+			Image = Aurora.SeasonalAssets.Halloween.Bat,
+			BackgroundTransparency = 1,
+			ImageColor3 = Color3.fromRGB(255, 255, 255),
+			Active = false,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Size = UDim2.fromOffset(-64, 64),
+			ZIndex = 100,
+			Parent = screen,
+		})
+		table.insert(window.SeasonalDecor, pumpkin)
+		table.insert(window.SeasonalDecor, bat)
+		window.HalloweenDecor = { Pumpkin = pumpkin, Bat = bat }
+		-- follow drag / open animation / minimize
+		local main = window.Main
+		for _, prop in ipairs({ "Position", "AbsoluteSize", "Visible" }) do
+			table.insert(window.SeasonalConns, main:GetPropertyChangedSignal(prop):Connect(function()
+				SyncCornerDecor(window)
+			end))
+		end
+		SyncCornerDecor(window)
+	elseif seasonal == "Christmas" then
+		local snowman = New("ImageLabel", {
+			Name = "ChristmasSnowman",
+			Image = Aurora.SeasonalAssets.Christmas.Snowman,
+			BackgroundTransparency = 1,
+			ImageTransparency = Aurora.SnowmanTransparency or 0.25,
+			AnchorPoint = Vector2.new(0, 1),
+			Position = UDim2.new(0, 8, 1, -8),
+			Size = UDim2.fromOffset(72, 72),
+			ZIndex = 20,
+			Parent = contentPanel,
+		})
+		local tree = New("ImageLabel", {
+			Name = "ChristmasTree",
+			Image = Aurora.SeasonalAssets.Christmas.Tree,
+			BackgroundTransparency = 1,
+			ImageTransparency = Aurora.TreeTransparency or 0.8,
+			AnchorPoint = Vector2.new(1, 1),
+			Position = UDim2.new(1, -8, 1, -8),
+			Size = UDim2.fromOffset(72, 72),
+			ZIndex = 20,
+			Parent = contentPanel,
+		})
+		table.insert(window.SeasonalDecor, snowman)
+		table.insert(window.SeasonalDecor, tree)
+		StartSnowfall(window, contentPanel, 14, Aurora.SeasonalAssets.Christmas.Snowflake)
+	end
+end
+
+local function RefreshSeasonalDecor()
+	for _, window in ipairs(Aurora.Windows) do
+		if not window.Destroyed and window.Topbar and window.ContentPanel then
+			EnsureSeasonalDecor(window, window.Topbar, window.ContentPanel)
+		end
+	end
+end
+
+----------------------------------------------------------------------
+-- CHRISTMAS FESTIVE ACCENTS (red/green/blue, randomized per element)
+----------------------------------------------------------------------
+Aurora.ChristmasAccents = {
+	Color3.fromRGB(198, 58, 68),  -- festive red
+	Color3.fromRGB(45, 160, 90),  -- festive green
+	Color3.fromRGB(70, 130, 220), -- festive blue
+}
+Aurora.FestiveParts = {} -- { Object, Property } re-rolled while Christmas is active
+
+local function FestivePick()
+	local list = Aurora.ChristmasAccents
+	return list[math.random(1, #list)]
+end
+
+-- live reads (toggles, dropdowns, tab icons): captured pick while Christmas,
+-- real theme Accent otherwise — stale-safe across theme switches
+local function FestiveNow(pick)
+	if Aurora.Theme and Aurora.Theme.UseChristmasColors then return pick end
+	return Aurora.Theme.Accent
+end
+
+-- static accent spots (paragraph bars, tab indicators, slider fills):
+-- random festive while Christmas, normal Accent binding otherwise
+local function FestiveStatic(object, property)
+	if Aurora.Theme and Aurora.Theme.UseChristmasColors then
+		object[property] = FestivePick()
+	else
+		Bind(object, property, "Accent")
+	end
+	table.insert(Aurora.FestiveParts, { Object = object, Property = property })
+end
+
+local function RefreshFestive()
+	local christmas = Aurora.Theme and Aurora.Theme.UseChristmasColors
+	for i = #Aurora.FestiveParts, 1, -1 do
+		local p = Aurora.FestiveParts[i]
+		if not p.Object or not p.Object.Parent then
+			table.remove(Aurora.FestiveParts, i)
+		else
+			local c
+			if christmas then c = FestivePick() else c = Aurora.Theme.Accent end
+			p.Object[p.Property] = c
+			local grad = p.Object:FindFirstChildOfClass("UIGradient")
+			if grad then
+				grad.Color = ColorSequence.new(c, Aurora.Theme.AccentSoft)
+			end
+		end
+	end
+end
+
+----------------------------------------------------------------------
 -- THEME SWITCHING
 ----------------------------------------------------------------------
 function Aurora:SetTheme(name)
@@ -757,6 +1025,7 @@ function Aurora:SetTheme(name)
 	Aurora.ThemeName = typeof(name) == "string" and name or "Custom"
 	-- reset flags that only some themes define
 	Aurora.Theme.UseUziImages = false
+	Aurora.Theme.Seasonal = nil
 	for token, value in pairs(theme) do
 		Aurora.Theme[token] = value
 	end
@@ -785,6 +1054,8 @@ function Aurora:SetTheme(name)
 	for _, window in ipairs(Aurora.Windows) do
 		ApplyWindowUITransparency(window)
 	end
+	RefreshFestive()
+	RefreshSeasonalDecor()
 end
 
 function Aurora:SetAccent(color)
@@ -929,7 +1200,12 @@ function Aurora:CreateWindow(config)
 		MinimizeIcon = Icon(config.MinimizeIcon or "rbxassetid://10734896206"),
 	}
 
-	if config.Theme then Aurora:SetTheme(config.Theme) end
+	if config.Theme then
+		Aurora:SetTheme(config.Theme)
+	elseif not config.DisableSeasonal and not Aurora.DisableSeasonal then
+		local seasonal = Aurora:GetSeasonalTheme()
+		if seasonal then Aurora:SetTheme(seasonal) end
+	end
 	if config.Accent then Aurora:SetAccent(config.Accent) end
 
 	--// Root
@@ -958,21 +1234,10 @@ function Aurora:CreateWindow(config)
 	main.ClipsDescendants = true
 	RegisterUIPart(window, main, 0)
 
-	-- Lowest layer: full-window art (Uzi @ 50% when theme is Uzi; toggled by transparency)
+	-- Optional explicit background image only (full-size Uzi art removed per request)
 	local windowArt
 	if config.BackgroundImage then
 		windowArt = DecorImage(main, config.BackgroundImage, config.BackgroundImageTransparency or 0.55, 0, false)
-	else
-		local id = RandomUziImage()
-		windowArt = DecorImage(main, id, Aurora.UziWindowTransparency, 0, true)
-		for _, entry in ipairs(UziDecorList) do
-			if entry.Image == windowArt then
-				entry.Kind = "window"
-				entry.Base = Aurora.UziWindowTransparency
-				entry.FixedBase = true
-				break
-			end
-		end
 	end
 	window.WindowArt = windowArt
 
@@ -1057,8 +1322,8 @@ function Aurora:CreateWindow(config)
 	end
 
 	local titleLeft = titleIcon and 48 or 16
-	-- Reserve right side for close/minimize (2 * 34 + padding)
-	local titleRightPad = 84
+	-- Reserve right side for close/minimize + Halloween pumpkin (2 * 34 + decor + padding)
+	local titleRightPad = 118
 
 	local titleLabel = New("TextLabel", {
 		Text = window.Title,
@@ -1145,18 +1410,29 @@ function Aurora:CreateWindow(config)
 		Size = UDim2.new(0, config.SidebarWidth or 156, 1, -46),
 		Position = UDim2.fromOffset(0, 46),
 		BackgroundTransparency = 0,
+		ClipsDescendants = true,
 		ZIndex = 3,
 		Theme = { BackgroundColor3 = "Sidebar" },
 		Parent = main,
 	})
+	Corner(10, sidebar)
 	window.Sidebar = sidebar
 	RegisterUIPart(window, sidebar, 0)
+	-- square off the top corners (butt joint under the flat topbar); bottom stays round
+	New("Frame", {
+		Size = UDim2.new(1, 0, 0, 10),
+		Position = UDim2.fromOffset(0, 0),
+		BorderSizePixel = 0,
+		ZIndex = 1,
+		Theme = { BackgroundColor3 = "Sidebar" },
+		Parent = sidebar,
+	})
 	do
 		local id = RandomUziImage()
 		DecorImage(sidebar, id, Aurora.UziOverlayTransparency, 0, true)
 	end
 	New("Frame", {
-		Size = UDim2.new(0, 1, 1, 0),
+		Size = UDim2.new(0, 1, 1, -12),
 		Position = UDim2.new(1, -1, 0, 0),
 		BorderSizePixel = 0,
 		BackgroundTransparency = 0.45,
@@ -1303,6 +1579,19 @@ function Aurora:CreateWindow(config)
 	})
 	window.ContentPanel = contentPanel
 	RegisterUIPart(window, contentPanel, 0)
+	Corner(10, contentPanel)
+	-- square off the top corners (butt joint under the flat topbar); bottom stays round
+	New("Frame", {
+		Name = "TopSquare",
+		Size = UDim2.new(1, 0, 0, 10),
+		Position = UDim2.fromOffset(0, 0),
+		BorderSizePixel = 0,
+		ZIndex = 1,
+		Theme = { BackgroundColor3 = "Background" },
+		Parent = contentPanel,
+	})
+	window.Topbar = topbar
+	EnsureSeasonalDecor(window, topbar, contentPanel)
 	do
 		local id = RandomUziImage()
 		DecorImage(contentPanel, id, Aurora.UziOverlayTransparency, 0, true)
@@ -1419,17 +1708,26 @@ function Aurora:CreateWindow(config)
 
 	function window:Destroy()
 		window.Destroyed = true
-		screen:Destroy()
+		window.SnowLoop = nil
+		ClearSeasonalDecor(window)
+		if window._toggleConn then pcall(function() window._toggleConn:Disconnect() end) end
+		pcall(function() screen:Destroy() end)
 		for index, win in ipairs(Aurora.Windows) do
 			if win == window then table.remove(Aurora.Windows, index) end
 		end
+		-- prune dead theme bindings / decor so they do not pile up
+		for index = #ThemeBindings, 1, -1 do
+			local b = ThemeBindings[index]
+			if not b.Object or not b.Object.Parent then table.remove(ThemeBindings, index) end
+		end
+		PruneUziDecor()
 	end
 
 	function window:Toggle()
 		if window.Minimized then window:Restore() else window:Minimize() end
 	end
 
-	Connect(UserInputService.InputBegan, function(input, processed)
+	window._toggleConn = Connect(UserInputService.InputBegan, function(input, processed)
 		if processed or window.Destroyed then return end
 		if input.KeyCode == window.ToggleKey then
 			window:Toggle()
@@ -1499,8 +1797,9 @@ function Aurora:CreateWindow(config)
 		if tab.Color then
 			indicator.BackgroundColor3 = tab.Color
 		else
-			Bind(indicator, "BackgroundColor3", "Accent")
+			FestiveStatic(indicator, "BackgroundColor3")
 		end
+		local tabFestive = FestivePick()
 
 		local tabIcon
 		if tabConfig.Icon then
@@ -1625,9 +1924,9 @@ function Aurora:CreateWindow(config)
 			button.BackgroundColor3 = Aurora.Theme.ElementHover
 			label.TextColor3 = Aurora.Theme.Text
 			indicator.Size = UDim2.fromOffset(3, 18)
-			if tabIcon then
-				tabIcon.ImageColor3 = tab.Color or Aurora.Theme.Accent
-			end
+		if tabIcon then
+			tabIcon.ImageColor3 = tab.Color or FestiveNow(tabFestive)
+		end
 			-- ensure Uzi layer visible on selected tab while theme is Uzi
 			local decor = button:FindFirstChild("AuroraDecor")
 			if decor and decor:IsA("ImageLabel") and ShouldUseUziImages() then
@@ -1668,8 +1967,9 @@ function Aurora:CreateWindow(config)
 		local function onTabPress()
 			tab:Select()
 		end
-		button.MouseButton1Click:Connect(onTabPress)
-		button.Activated:Connect(onTabPress)
+		local onTabPressOnce = SingleFire(onTabPress)
+		button.MouseButton1Click:Connect(onTabPressOnce)
+		button.Activated:Connect(onTabPressOnce)
 
 		function tab:SetTitle(text) label.Text = text; tab.Title = text end
 		function tab:SetIcon(id) if tabIcon then tabIcon.Image = Icon(id) end end
@@ -1800,14 +2100,15 @@ function Aurora:CreateWindow(config)
 			local frame = Base(56, false, cfg)
 			frame.AutomaticSize = Enum.AutomaticSize.Y
 
-			local accentBar = New("Frame", {
-				Size = UDim2.new(0, 3, 1, -20),
-				Position = UDim2.fromOffset(0, 10),
-				BackgroundTransparency = 0,
-				Theme = { BackgroundColor3 = "Accent" },
-				Parent = frame,
-			})
-			Corner(999, accentBar)
+		local accentBar = New("Frame", {
+			Size = UDim2.new(0, 3, 1, -20),
+			Position = UDim2.fromOffset(0, 10),
+			BackgroundTransparency = 0,
+			BackgroundColor3 = Aurora.Theme.Accent,
+			Parent = frame,
+		})
+		Corner(999, accentBar)
+		FestiveStatic(accentBar, "BackgroundColor3")
 
 			local title = New("TextLabel", {
 				Text = cfg.Title or "Information",
@@ -1838,9 +2139,15 @@ function Aurora:CreateWindow(config)
 			})
 			Padding(frame, 0, 12, 0, 0)
 
-			local object = { Instance = frame }
+			local object = { Instance = frame, Type = "Paragraph" }
 			function object:SetTitle(text) title.Text = text end
 			function object:SetContent(text) content.Text = text end
+			function object:SetText(text) content.Text = text end
+			function object:Set(text, contentText)
+				if contentText ~= nil then title.Text = text; content.Text = contentText
+				elseif text ~= nil then content.Text = text end
+			end
+			function object:Get() return title.Text, content.Text end
 			function object:Destroy() frame:Destroy() end
 			return object
 		end
@@ -1860,7 +2167,7 @@ function Aurora:CreateWindow(config)
 				Parent = frame,
 			})
 			Ripple(button)
-			local buttonTitle = Labels(frame, cfg.Title or "Button", cfg.Description, 54)
+			local buttonTitle, buttonDesc = Labels(frame, cfg.Title or "Button", cfg.Description, 54)
 
 			local arrow = New("ImageLabel", {
 				Image = "rbxassetid://10709791437",
@@ -1878,15 +2185,25 @@ function Aurora:CreateWindow(config)
 			button.MouseLeave:Connect(function()
 				Tween(arrow, 0.18, { ImageColor3 = Aurora.Theme.SubText, Position = UDim2.new(1, -14, 0.5, 0) })
 			end)
-			local function onClick()
-				if cfg.Callback then task.spawn(cfg.Callback) end
-			end
-			button.Active = true
-			button.MouseButton1Click:Connect(onClick)
-			button.Activated:Connect(onClick)
+		local function onClick()
+			if cfg.Callback then task.spawn(cfg.Callback) end
+		end
+		local onClickOnce = SingleFire(onClick)
+		button.Active = true
+		button.MouseButton1Click:Connect(onClickOnce)
+		button.Activated:Connect(onClickOnce)
 
-			local object = { Instance = frame }
+			local object = { Instance = frame, Type = "Button" }
 			function object:SetTitle(text) buttonTitle.Text = text end
+			function object:SetText(text) buttonTitle.Text = text end
+			function object:SetDescription(text)
+				if buttonDesc then buttonDesc.Text = text end
+			end
+			function object:Set(titleText, descText)
+				if titleText ~= nil then buttonTitle.Text = titleText end
+				if descText ~= nil and buttonDesc then buttonDesc.Text = descText end
+			end
+			function object:GetTitle() return buttonTitle.Text end
 			function object:Destroy() frame:Destroy() end
 			return object
 		end
@@ -1927,12 +2244,13 @@ function Aurora:CreateWindow(config)
 			})
 			Corner(999, knob)
 
-			local object = { Instance = frame, Value = state, Type = "Toggle" }
+		local object = { Instance = frame, Value = state, Type = "Toggle" }
+		local toggleFestive = FestivePick()
 
-			function object:Set(value, silent)
-				state = value and true or false
-				object.Value = state
-				Tween(track, 0.2, { BackgroundColor3 = state and Aurora.Theme.Accent or Aurora.Theme.Stroke })
+		function object:Set(value, silent)
+			state = value and true or false
+			object.Value = state
+			Tween(track, 0.2, { BackgroundColor3 = state and FestiveNow(toggleFestive) or Aurora.Theme.Stroke })
 				Tween(knob, 0.24, { Position = state and UDim2.new(1, -19, 0.5, 0) or UDim2.new(0, 3, 0.5, 0) }, Enum.EasingStyle.Back)
 				if cfg.Flag then Aurora.Flags[cfg.Flag] = state end
 				if not silent and cfg.Callback then task.spawn(cfg.Callback, state) end
@@ -2012,17 +2330,18 @@ function Aurora:CreateWindow(config)
 			})
 			Corner(999, track)
 
-			local fill = New("Frame", {
-				Size = UDim2.fromScale((value - min) / (max - min), 1),
-				BackgroundTransparency = 0,
-				Theme = { BackgroundColor3 = "Accent" },
-				Parent = track,
-			})
-			Corner(999, fill)
-			New("UIGradient", {
-				Color = ColorSequence.new(Aurora.Theme.Accent, Aurora.Theme.AccentSoft),
-				Parent = fill,
-			})
+		local fill = New("Frame", {
+			Size = UDim2.fromScale((value - min) / (max - min), 1),
+			BackgroundTransparency = 0,
+			BackgroundColor3 = Aurora.Theme.Accent,
+			Parent = track,
+		})
+		Corner(999, fill)
+		FestiveStatic(fill, "BackgroundColor3")
+		New("UIGradient", {
+			Color = ColorSequence.new(fill.BackgroundColor3, Aurora.Theme.AccentSoft),
+			Parent = fill,
+		})
 
 			local knob = New("Frame", {
 				AnchorPoint = Vector2.new(0.5, 0.5),
@@ -2167,8 +2486,9 @@ function Aurora:CreateWindow(config)
 			List(listHolder, 4)
 			Padding(listHolder, 2, 8, 0, 0)
 
-			local object = { Instance = frame, Value = selected, Type = "Dropdown" }
-			local optionButtons = {}
+		local object = { Instance = frame, Value = selected, Type = "Dropdown" }
+		local optionButtons = {}
+		local dropdownFestive = FestivePick()
 
 			local function IsSelected(value)
 				if multi then
@@ -2190,13 +2510,13 @@ function Aurora:CreateWindow(config)
 				end
 			end
 
-			local function Refresh()
-				for value, row in pairs(optionButtons) do
-					local active = IsSelected(value)
-					Tween(row.Frame, 0.15, {
-						BackgroundTransparency = active and 0 or 1,
-						BackgroundColor3 = Aurora.Theme.Accent,
-					})
+		local function Refresh()
+			for value, row in pairs(optionButtons) do
+				local active = IsSelected(value)
+				Tween(row.Frame, 0.15, {
+					BackgroundTransparency = active and 0 or 1,
+					BackgroundColor3 = FestiveNow(dropdownFestive),
+				})
 					Tween(row.Label, 0.15, {
 						TextColor3 = active and Color3.fromRGB(255, 255, 255) or Aurora.Theme.SubText,
 					})
@@ -2284,6 +2604,24 @@ function Aurora:CreateWindow(config)
 				if cfg.Flag then Aurora.Flags[cfg.Flag] = value end
 				Refresh()
 				if not silent and cfg.Callback then task.spawn(cfg.Callback, value) end
+			end
+
+			function object:SetValues(newValues)
+				object:Refresh(newValues)
+			end
+
+			function object:Get() return selected end
+			function object:GetValue() return selected end
+			function object:GetValues() return values end
+
+			function object:SetTitle(text)
+				for _, child in ipairs(frame:GetChildren()) do
+					if child:IsA("TextLabel") and child.Text ~= "" and child ~= preview then
+						-- first title-ish label (Labels() title); preview excluded
+						child.Text = text
+						break
+					end
+				end
 			end
 
 			function object:Refresh(newValues)
@@ -2394,8 +2732,9 @@ function Aurora:CreateWindow(config)
 				button.Text = "..."
 			end
 
-			button.MouseButton1Click:Connect(beginListen)
-			button.Activated:Connect(beginListen)
+		local beginListenOnce = SingleFire(beginListen)
+		button.MouseButton1Click:Connect(beginListenOnce)
+		button.Activated:Connect(beginListenOnce)
 
 			local keyConnection = Connect(UserInputService.InputBegan, function(input, processed)
 				if listening then
@@ -2574,8 +2913,9 @@ function Aurora:CreateWindow(config)
 	local function onSettingsPress()
 		window:OpenSettings()
 	end
-	settingsButton.MouseButton1Click:Connect(onSettingsPress)
-	settingsButton.Activated:Connect(onSettingsPress)
+	local onSettingsPressOnce = SingleFire(onSettingsPress)
+	settingsButton.MouseButton1Click:Connect(onSettingsPressOnce)
+	settingsButton.Activated:Connect(onSettingsPressOnce)
 
 	function window:Notify(cfg) return Aurora:Notify(cfg) end
 	function window:SelectTab(index)
