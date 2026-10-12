@@ -2433,7 +2433,12 @@ function Aurora:CreateWindow(config)
 			local values   = cfg.Values or cfg.Options or {}
 			local multi    = cfg.Multi or cfg.MultiSelect or false
 			local selected = multi and (cfg.Default or {}) or (cfg.Default or nil)
+			-- 1.2.1: tolerate a single-string Default on multi dropdowns
+			if multi and type(selected) ~= "table" then
+				selected = (selected ~= nil) and { selected } or {}
+			end
 			local open     = false
+			local locked   = cfg.Locked or false
 			local rowHeight = cfg.Description and 52 or 42
 
 			local frame = Base(rowHeight, false, cfg)
@@ -2571,8 +2576,9 @@ function Aurora:CreateWindow(config)
 					})
 					optionButtons[value] = { Frame = row, Label = rowLabel, Tick = tick }
 
-					row.MouseButton1Click:Connect(function()
-						if multi then
+				row.MouseButton1Click:Connect(function()
+					if locked then return end
+					if multi then
 							selected = selected or {}
 							local removed = false
 							for i, item in ipairs(selected) do
@@ -2596,7 +2602,7 @@ function Aurora:CreateWindow(config)
 				Refresh()
 			end
 
-			header.MouseButton1Click:Connect(function() SetOpen(not open) end)
+			header.MouseButton1Click:Connect(function() if locked then return end SetOpen(not open) end)
 
 			function object:Set(value, silent)
 				selected = value
@@ -2646,6 +2652,24 @@ function Aurora:CreateWindow(config)
 			end
 
 			function object:Destroy() frame:Destroy() end
+
+			-- 1.2.1: lock (dims + ignores input) and visibility helpers
+			local function ApplyLocked()
+				header.Active = not locked
+				preview.TextTransparency = locked and 0.5 or 0
+				chevron.ImageTransparency = locked and 0.5 or 0
+				if locked and open then SetOpen(false) end
+			end
+			function object:SetLocked(state)
+				locked = state and true or false
+				ApplyLocked()
+			end
+			function object:IsLocked() return locked end
+			function object:SetVisible(visible)
+				frame.Visible = visible and true or false
+			end
+			function object:IsVisible() return frame.Visible end
+			ApplyLocked()
 
 			BuildOptions()
 			if cfg.Flag then
