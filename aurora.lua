@@ -7,7 +7,7 @@
    ██║  ██║╚██████╔╝██║  ██║╚██████╔╝██║  ██║██║  ██║    ╚██████╔╝██║
    ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝     ╚═════╝ ╚═╝
 
-   Aurora UI  •  v1.2.0
+   Aurora UI  •  v1.2.1
    A modern, lightweight and fully themeable interface library for Roblox.
 
    Usage:
@@ -36,7 +36,7 @@ local LocalPlayer = Players.LocalPlayer
 
 --// Library
 local Aurora = {
-	Version      = "1.2.0",
+	Version      = "1.2.1",
 	Flags        = {},   -- Flag -> value
 	Options      = {},   -- Flag -> element object
 	Windows      = {},
